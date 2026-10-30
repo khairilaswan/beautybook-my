@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-50: #fdf2f6;
+  --color-brand-100: #fbe6ee;
+  --color-brand-200: #f8cddd;
+  --color-brand-500: #d9467a;
+  --color-brand-600: #c22c62;
+  --color-brand-700: #a2214f;
+  --color-ink: #1c1917;
+  --color-muted: #6b6461;
+  --color-line: #ece7e4;
+  --color-canvas: #fbf9f8;
+  --color-whatsapp: #1fa855;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-brand-500);
+  outline-offset: 2px;
+}
