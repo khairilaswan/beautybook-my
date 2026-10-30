@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+
+      # Local Supabase: applies every migration and supabase/seed.sql.
+      - name: Start Supabase
+        run: npx supabase start -x realtime,imgproxy,edge-runtime,logflare,vector,studio,postgres-meta,supavisor
+      - name: Row-level security tests
+        run: psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -v ON_ERROR_STOP=1 -f supabase/tests/rls_checks.sql
+      - name: Point the app at local Supabase
+        run: |
+          eval "$(npx supabase status -o env)"
+          {
+            echo "NEXT_PUBLIC_SITE_URL=http://localhost:3000"
+            echo "NEXT_PUBLIC_SUPABASE_URL=$API_URL"
+            echo "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${PUBLISHABLE_KEY:-$ANON_KEY}"
+            echo "SUPABASE_SECRET_KEY=${SECRET_KEY:-$SERVICE_ROLE_KEY}"
+          } >> "$GITHUB_ENV"
+      - run: npm run build
