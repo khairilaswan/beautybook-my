@@ -37,6 +37,13 @@ const nextConfig: NextConfig = {
           { key: "X-Frame-Options", value: "SAMEORIGIN" },
         ],
       },
+      {
+        // Only the real domain gets indexed; *.vercel.app copies (including
+        // production before the domain is attached) stay out of search.
+        source: "/:path*",
+        missing: [{ type: "host", value: "beautybook.my" }],
+        headers: [{ key: "X-Robots-Tag", value: "noindex" }],
+      },
     ];
   },
 };
