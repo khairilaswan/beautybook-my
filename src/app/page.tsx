@@ -8,7 +8,7 @@ export default async function HomePage() {
 
   return (
     <>
-      <section className="bg-gradient-to-b from-brand-50 to-canvas">
+      <section className="theme-hero bg-gradient-to-b from-brand-50 to-canvas">
         <div className="mx-auto max-w-6xl px-4 pb-12 pt-14 sm:pt-20">
           <h1 className="max-w-2xl text-4xl font-bold tracking-tight sm:text-5xl">
             Find your next salon, barber or beauty spot in Klang Valley
