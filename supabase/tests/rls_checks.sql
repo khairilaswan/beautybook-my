@@ -229,9 +229,12 @@ do $$ begin
 end $$;
 
 select set_config('request.jwt.claim.sub', '10000000-0000-4000-8000-000000000004', true);
-do $$ begin
+do $$
+declare n int;
+begin
   update public.member_access set status = 'approved' where user_id = '10000000-0000-4000-8000-000000000005';
-  if (select status from public.member_access where user_id = '10000000-0000-4000-8000-000000000005') is distinct from 'pending' then
+  get diagnostics n = row_count;
+  if n <> 0 then
     raise exception 'an editor approved a member';
   end if;
 end $$;
