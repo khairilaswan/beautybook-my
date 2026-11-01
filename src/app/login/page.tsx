@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { LoginForms } from "@/app/login/login-forms";
 import { getLoginMethods } from "@/lib/login-methods";
 import { safeNext } from "@/lib/safe-next";
+import { membersOnly } from "@/lib/site-access";
 
 export const metadata: Metadata = { title: "Sign in", robots: { index: false } };
 
@@ -10,7 +11,11 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
   return (
     <div className="mx-auto max-w-sm px-4 py-12">
       <h1 className="text-2xl font-bold">Sign in to BeautyBook</h1>
-      <p className="mt-1 text-muted">Save shops, keep notes and see your booking requests.</p>
+      <p className="mt-1 text-muted">
+        {membersOnly
+          ? "BeautyBook is open to approved members only for now. Sign in or create an account, and we'll let you in once it's approved."
+          : "Save shops, keep notes and see your booking requests."}
+      </p>
       <div className="mt-8">
         <Suspense>
           <Forms searchParams={searchParams} />

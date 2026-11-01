@@ -1,8 +1,10 @@
 import type { MetadataRoute } from "next";
 import { MIN_INDEXABLE_LISTINGS, countInTree, getAreas, getCategories, getHubCounts, getListingSlugs } from "@/lib/data/directory";
 import { absoluteUrl } from "@/lib/seo";
+import { membersOnly } from "@/lib/site-access";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  if (membersOnly) return [];
   const [areas, categories, counts, listings] = await Promise.all([
     getAreas(),
     getCategories(),
