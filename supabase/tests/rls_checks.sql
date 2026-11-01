@@ -203,34 +203,35 @@ end $$;
 
 -- Members-only access --------------------------------------------------------
 reset role;
+insert into auth.users (id, email) values ('10000000-0000-4000-8000-000000000005', 'member@example.test');
 do $$ begin
-  if (select status from public.member_access where user_id = '10000000-0000-4000-8000-000000000003') <> 'pending' then
+  if (select status from public.member_access where user_id = '10000000-0000-4000-8000-000000000005') is distinct from 'pending' then
     raise exception 'a new sign-up is not pending';
   end if;
-  if (select status from public.member_access where user_id = '10000000-0000-4000-8000-000000000001') <> 'approved' then
+  if (select status from public.member_access where user_id = '10000000-0000-4000-8000-000000000001') is distinct from 'approved' then
     raise exception 'staff are not approved';
   end if;
-  if (select raw_app_meta_data ->> 'access' from auth.users where id = '10000000-0000-4000-8000-000000000003') <> 'pending' then
+  if (select raw_app_meta_data ->> 'access' from auth.users where id = '10000000-0000-4000-8000-000000000005') is distinct from 'pending' then
     raise exception 'access not copied to app_metadata';
   end if;
 end $$;
 
 set local role authenticated;
-select set_config('request.jwt.claim.sub', '10000000-0000-4000-8000-000000000003', true);
+select set_config('request.jwt.claim.sub', '10000000-0000-4000-8000-000000000005', true);
 do $$ begin
   if (select count(*) from public.member_access) <> 1 then
     raise exception 'a customer sees other members';
   end if;
-  update public.member_access set status = 'approved' where user_id = '10000000-0000-4000-8000-000000000003';
-  if (select status from public.member_access where user_id = '10000000-0000-4000-8000-000000000003') <> 'pending' then
+  update public.member_access set status = 'approved' where user_id = '10000000-0000-4000-8000-000000000005';
+  if (select status from public.member_access where user_id = '10000000-0000-4000-8000-000000000005') is distinct from 'pending' then
     raise exception 'a customer approved themselves';
   end if;
 end $$;
 
 select set_config('request.jwt.claim.sub', '10000000-0000-4000-8000-000000000004', true);
 do $$ begin
-  update public.member_access set status = 'approved' where user_id = '10000000-0000-4000-8000-000000000003';
-  if (select status from public.member_access where user_id = '10000000-0000-4000-8000-000000000003') <> 'pending' then
+  update public.member_access set status = 'approved' where user_id = '10000000-0000-4000-8000-000000000005';
+  if (select status from public.member_access where user_id = '10000000-0000-4000-8000-000000000005') is distinct from 'pending' then
     raise exception 'an editor approved a member';
   end if;
 end $$;
@@ -238,12 +239,12 @@ end $$;
 select set_config('request.jwt.claim.sub', '10000000-0000-4000-8000-000000000001', true);
 do $$ begin
   update public.member_access set status = 'approved', decided_at = now()
-  where user_id = '10000000-0000-4000-8000-000000000003';
+  where user_id = '10000000-0000-4000-8000-000000000005';
 end $$;
 
 reset role;
 do $$ begin
-  if (select raw_app_meta_data ->> 'access' from auth.users where id = '10000000-0000-4000-8000-000000000003') <> 'approved' then
+  if (select raw_app_meta_data ->> 'access' from auth.users where id = '10000000-0000-4000-8000-000000000005') is distinct from 'approved' then
     raise exception 'the owner could not approve a member';
   end if;
 end $$;
