@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { AddBusinessForm } from "@/app/for-business/add-business-form";
 import { getAreas, getCategories } from "@/lib/data/directory";
+import { whatsAppCodesEnabled } from "@/lib/whatsapp-cloud";
 
 export const metadata: Metadata = {
   title: "List or claim your salon, barbershop or beauty business",
@@ -12,6 +13,7 @@ export const metadata: Metadata = {
 
 export default async function ForBusinessPage() {
   const [categories, areas] = await Promise.all([getCategories(), getAreas()]);
+  const byCode = whatsAppCodesEnabled();
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
       <h1 className="max-w-2xl text-3xl font-bold tracking-tight sm:text-4xl">
@@ -31,16 +33,30 @@ export default async function ForBusinessPage() {
             <button className="rounded-xl bg-ink px-4 py-2 font-medium text-white">Find</button>
           </form>
           <ol className="mt-6 list-decimal space-y-2 pl-5 text-sm">
-            <li>Sign in with Google, Facebook or your phone.</li>
-            <li>We send a 6-digit code to your shop&apos;s WhatsApp number.</li>
-            <li>Enter it and your dashboard opens. No paperwork.</li>
+            <li>Sign in.</li>
+            {byCode ? (
+              <>
+                <li>We send a 6-digit code to your shop&apos;s WhatsApp number.</li>
+                <li>Enter it and your dashboard opens. No paperwork.</li>
+              </>
+            ) : (
+              <>
+                <li>Upload your SSM certificate, a business card or a shopfront photo.</li>
+                <li>We review it within 2 working days and open your dashboard.</li>
+              </>
+            )}
           </ol>
         </section>
 
         <section className="rounded-2xl border border-line bg-white p-6">
           <h2 className="text-xl font-semibold">Not listed yet? Add your business</h2>
-          <p className="mt-1 text-muted">It goes live as soon as you verify your WhatsApp number.</p>
+          <p className="mt-1 text-muted">
+            {byCode
+              ? "It goes live as soon as you verify your WhatsApp number."
+              : "It goes live once we've checked your proof of business."}
+          </p>
           <AddBusinessForm
+            byCode={byCode}
             categories={categories.map((c) => ({ slug: c.slug, name: c.name_en }))}
             areas={areas.filter((a) => a.type !== "state").map((a) => ({ slug: a.slug, name: a.name }))}
           />

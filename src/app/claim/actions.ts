@@ -11,7 +11,7 @@ import { clientIp } from "@/lib/request";
 import { listingSlug, uniqueSlug } from "@/lib/slug";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyTurnstile } from "@/lib/turnstile";
-import { sendWhatsAppCode } from "@/lib/whatsapp-cloud";
+import { sendWhatsAppCode, whatsAppCodesEnabled } from "@/lib/whatsapp-cloud";
 
 const CODE_TTL_MS = 10 * 60 * 1000;
 const MAX_ATTEMPTS = 5;
@@ -282,6 +282,8 @@ export async function addBusiness(_prev: ClaimState & { listingId?: string; slug
   if (error) return { error: "Could not add the business. Please try again." };
   await admin.from("listing_categories").insert({ listing_id: listing.id, category_id: category.id, is_primary: true });
 
+  // Without WhatsApp codes the new listing is verified from a document instead.
+  if (!whatsAppCodesEnabled()) redirect(`/claim/${slug}`);
   const sent = await sendClaimCode(listing.id, user.id);
   return { ...sent, listingId: listing.id, slug };
 }

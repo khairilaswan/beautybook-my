@@ -7,7 +7,11 @@ import { Turnstile } from "@/components/turnstile";
 type State = ClaimState & { listingId?: string; slug?: string };
 const input = "mt-1 w-full rounded-xl border border-line bg-white px-3 py-2";
 
-export function AddBusinessForm(props: { categories: { slug: string; name: string }[]; areas: { slug: string; name: string }[] }) {
+export function AddBusinessForm(props: {
+  categories: { slug: string; name: string }[];
+  areas: { slug: string; name: string }[];
+  byCode: boolean;
+}) {
   const [state, action, pending] = useActionState<State, FormData>(
     async (prev, form) => (prev.claimId ? { ...prev, ...(await verifyClaim(prev, form)) } : addBusiness(prev, form)),
     {},
@@ -67,7 +71,7 @@ export function AddBusinessForm(props: { categories: { slug: string; name: strin
       <Turnstile />
       {state.error && <p role="alert" className="text-sm text-brand-700">{state.error}</p>}
       <button disabled={pending} className="w-full rounded-xl bg-whatsapp px-4 py-3 font-semibold text-white disabled:opacity-60">
-        {pending ? "Sending code…" : "Add and send WhatsApp code"}
+        {props.byCode ? (pending ? "Sending code…" : "Add and send WhatsApp code") : pending ? "Adding…" : "Add my business"}
       </button>
       <p className="text-xs text-muted">You&apos;ll be asked to sign in first if you aren&apos;t already.</p>
     </form>
