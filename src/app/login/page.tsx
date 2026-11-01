@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { LoginForms } from "@/app/login/login-forms";
+import { getLoginMethods } from "@/lib/login-methods";
 import { safeNext } from "@/lib/safe-next";
 
 export const metadata: Metadata = { title: "Sign in", robots: { index: false } };
@@ -23,10 +24,11 @@ async function Forms({ searchParams }: { searchParams: PageProps<"/login">["sear
   const params = await searchParams;
   const next = safeNext(typeof params.next === "string" ? params.next : null);
   const error = typeof params.error === "string" ? params.error : null;
+  const methods = await getLoginMethods();
   return (
     <>
       {error && <p role="alert" className="mb-4 rounded-xl bg-brand-50 p-3 text-sm text-brand-700">{error}</p>}
-      <LoginForms next={next} />
+      <LoginForms next={next} methods={methods} />
     </>
   );
 }

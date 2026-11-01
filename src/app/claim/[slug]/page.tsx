@@ -6,6 +6,7 @@ import { ClaimForms } from "@/app/claim/[slug]/claim-forms";
 import { requireUser } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { maskPhone } from "@/lib/phone";
+import { whatsAppCodesEnabled } from "@/lib/whatsapp-cloud";
 
 export const metadata: Metadata = { title: "Claim your business", robots: { index: false } };
 
@@ -73,7 +74,7 @@ async function Claim({
           slug={listing.slug}
           userId={user.id}
           maskedPhone={mobile ? maskPhone(mobile) : null}
-          canUseCode={!!mobile && (count ?? 0) === 0}
+          canUseCode={whatsAppCodesEnabled() && !!mobile && (count ?? 0) === 0}
         />
       </div>
     </>

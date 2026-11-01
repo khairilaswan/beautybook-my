@@ -1,5 +1,14 @@
 import "server-only";
 
+// Claim codes need the Cloud API in production; in development they are
+// printed to the server log instead.
+export function whatsAppCodesEnabled(): boolean {
+  return (
+    (!!process.env.WHATSAPP_ACCESS_TOKEN && !!process.env.WHATSAPP_PHONE_NUMBER_ID) ||
+    process.env.NODE_ENV !== "production"
+  );
+}
+
 // Sends a one-time code with the WhatsApp Cloud API, using an approved
 // authentication template. This is the only message BeautyBook sends itself;
 // we never message shops that did not ask for a code.
