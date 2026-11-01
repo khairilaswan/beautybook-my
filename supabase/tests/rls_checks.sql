@@ -283,6 +283,31 @@ begin
     raise exception 'the owner could not change the site theme';
   end if;
 end $$;
+
+-- A shop's own member can set its theme; a customer can't.
+select set_config('request.jwt.claim.sub', '10000000-0000-4000-8000-000000000002', true);
+do $$
+declare n int;
+begin
+  update public.listings set theme_style = 'brutal', theme_color = 'yellow'
+  where id = '00000000-0000-4000-8000-000000000001';
+  get diagnostics n = row_count;
+  if n <> 1 then
+    raise exception 'a shop owner could not set their shop theme';
+  end if;
+end $$;
+
+select set_config('request.jwt.claim.sub', '10000000-0000-4000-8000-000000000003', true);
+do $$
+declare n int;
+begin
+  update public.listings set theme_style = 'glass'
+  where id = '00000000-0000-4000-8000-000000000001';
+  get diagnostics n = row_count;
+  if n <> 0 then
+    raise exception 'a customer changed a shop theme';
+  end if;
+end $$;
 reset role;
 
 select 'all RLS checks passed' as result;

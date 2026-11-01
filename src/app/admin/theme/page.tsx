@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { requirePermission } from "@/lib/auth";
-import { getSiteTheme } from "@/lib/data/site-theme";
+import { getSiteSettings } from "@/lib/data/site-theme";
 import { ThemePicker } from "./theme-picker";
 
 export const metadata: Metadata = { title: "Theme" };
@@ -22,5 +22,6 @@ export default function Page() {
 
 async function ThemeSettings() {
   await requirePermission("staff.manage");
-  return <ThemePicker current={await getSiteTheme()} />;
+  const { theme, ownerThemes } = await getSiteSettings();
+  return <ThemePicker current={theme} ownerThemes={ownerThemes} />;
 }

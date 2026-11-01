@@ -4,7 +4,9 @@ import { revalidatePath, updateTag } from "next/cache";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 import { tags } from "@/lib/data/directory";
+import { getSiteSettings } from "@/lib/data/site-theme";
 import { createClient } from "@/lib/supabase/server";
+import { STYLE_COLORS, isThemeStyle } from "@/lib/themes";
 
 const STATUSES = ["confirmed", "declined", "no_show", "completed"] as const;
 
@@ -157,4 +159,29 @@ export async function removePhoto(listingId: string, slug: string, photoId: numb
   updateTag(tags.listing(slug));
   updateTag(tags.listings);
   revalidatePath(`/owner/${listingId}`);
+}
+
+// A shop's own theme for its page (null: use the site theme). Only while the
+// admin has switched owner themes on.
+export async function saveShopTheme(
+  listingId: string,
+  slug: string,
+  style: string | null,
+  color: string | null,
+): Promise<FormState> {
+  await requireUser("/owner");
+  if (!(await getSiteSettings()).ownerThemes) return { error: "Shop themes are switched off right now." };
+  let theme: { theme_style: string | null; theme_color: string | null } = { theme_style: null, theme_color: null };
+  if (style !== null) {
+    if (!isThemeStyle(style) || !(STYLE_COLORS[style] as string[]).includes(color ?? "")) {
+      return { error: "That style and colour don't go together." };
+    }
+    theme = { theme_style: style, theme_color: color };
+  }
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("listings").update(theme).eq("id", listingId).select("id");
+  if (error || !data?.length) return { error: "Could not save. Please try again." };
+  updateTag(tags.listing(slug));
+  revalidatePath(`/owner/${listingId}`);
+  return { message: style ? "Saved. Your shop page now uses this theme." : "Saved. Your shop page uses the BeautyBook theme." };
 }
