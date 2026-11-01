@@ -454,6 +454,23 @@ export async function resolveReport(reportId: number, outcome: "resolved" | "dis
 }
 
 // ---------------------------------------------------------------------------
+// Members (who can use the site in members-only mode)
+// ---------------------------------------------------------------------------
+
+export async function setMemberAccess(userId: string, status: "approved" | "rejected"): Promise<ActionState> {
+  const { user, supabase } = await staffClient("staff.manage");
+  if (userId === user.id) return { error: "You can't change your own access." };
+  const { data, error } = await supabase
+    .from("member_access")
+    .update({ status, decided_by: user.id, decided_at: new Date().toISOString() })
+    .eq("user_id", userId)
+    .select("user_id");
+  revalidatePath("/admin", "layout");
+  if (error || !data?.length) return { error: "Could not change this member." };
+  return { message: status === "approved" ? "Approved." : "Access removed." };
+}
+
+// ---------------------------------------------------------------------------
 // Staff and roles (one role per person)
 // ---------------------------------------------------------------------------
 
