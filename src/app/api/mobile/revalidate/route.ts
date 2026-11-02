@@ -18,12 +18,19 @@ export async function POST(request: NextRequest) {
 
   const admin = createAdminClient();
   const userId = ctx.user!.id;
-  // Only the shop's own members refresh its page; only a reviewer its reviews.
+  // Only the shop's own members refresh its page. Reviews: the shop's members
+  // (an owner reply) or someone who reviewed the shop.
+  const member = await admin
+    .from("listing_members")
+    .select("listing_id")
+    .eq("listing_id", listingId)
+    .eq("user_id", userId)
+    .maybeSingle();
   const allowed =
-    scope === "listing"
-      ? await admin.from("listing_members").select("listing_id").eq("listing_id", listingId).eq("user_id", userId).maybeSingle()
-      : await admin.from("reviews").select("id").eq("listing_id", listingId).eq("user_id", userId).limit(1).maybeSingle();
-  if (!allowed.data) return jsonError(ctx.t.common.tryAgain, 403);
+    !!member.data ||
+    (scope === "reviews" &&
+      !!(await admin.from("reviews").select("id").eq("listing_id", listingId).eq("user_id", userId).limit(1).maybeSingle()).data);
+  if (!allowed) return jsonError(ctx.t.common.tryAgain, 403);
 
   const { data: listing } = await admin.from("listings").select("slug").eq("id", listingId).maybeSingle();
   if (!listing) return jsonError(ctx.t.common.tryAgain, 404);

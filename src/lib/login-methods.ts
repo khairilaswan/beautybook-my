@@ -2,7 +2,8 @@ import "server-only";
 import { cacheLife } from "next/cache";
 import { supabasePublishableKey, supabaseUrl } from "@/lib/env";
 
-export type LoginMethods = { google: boolean; facebook: boolean; phone: boolean };
+// apple is used by the mobile app only (Sign in with Apple on iPhone).
+export type LoginMethods = { google: boolean; facebook: boolean; phone: boolean; apple: boolean };
 
 // Which sign-in providers are switched on in Supabase Auth, so the login page
 // only offers buttons that work. Falls back to showing everything if Auth
@@ -16,9 +17,14 @@ export async function getLoginMethods(): Promise<LoginMethods> {
     });
     if (!res.ok) throw new Error(`auth settings ${res.status}`);
     const { external } = (await res.json()) as { external?: Partial<LoginMethods> };
-    return { google: !!external?.google, facebook: !!external?.facebook, phone: !!external?.phone };
+    return {
+      google: !!external?.google,
+      facebook: !!external?.facebook,
+      phone: !!external?.phone,
+      apple: !!external?.apple,
+    };
   } catch (e) {
     console.error("could not read auth settings", e);
-    return { google: true, facebook: true, phone: true };
+    return { google: true, facebook: true, phone: true, apple: false };
   }
 }

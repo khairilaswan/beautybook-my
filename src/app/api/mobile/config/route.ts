@@ -3,7 +3,7 @@ import { connection } from "next/server";
 import { siteUrl } from "@/lib/env";
 import { getFeatureSettings } from "@/lib/data/features";
 import { getLoginMethods } from "@/lib/login-methods";
-import { paymentsEnabled } from "@/lib/setup";
+import { paymentsEnabled, remindersEnabled } from "@/lib/setup";
 import { membersOnly } from "@/lib/site-access";
 
 // What the mobile app needs to know at start-up: whether the directory is
@@ -18,6 +18,7 @@ export async function GET() {
       reviewsEnabled: features.reviewsEnabled,
       referralPoints: features.referralPoints,
       paymentsEnabled: paymentsEnabled(),
+      remindersEnabled: remindersEnabled(),
       siteUrl,
       // Set MOBILE_MIN_VERSION (e.g. "1.2.0") to ask older app versions to update.
       minAppVersion: process.env.MOBILE_MIN_VERSION ?? null,
