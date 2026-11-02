@@ -5,9 +5,11 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { type Permission, requirePermission } from "@/lib/auth";
 import { tags } from "@/lib/data/directory";
+import { SITE_THEME_TAG } from "@/lib/data/site-theme";
 import { type CleanListing, type ImportRow, MAX_IMPORT_ROWS, cleanRow, normalizeName } from "@/lib/import";
 import { normalizeMalaysianPhone } from "@/lib/phone";
 import { listingSlug, slugify, uniqueSlug } from "@/lib/slug";
+import { STYLE_COLORS, isThemeStyle, themeLabel } from "@/lib/themes";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -608,4 +610,45 @@ export async function deleteRedirect(from: string) {
   await supabase.from("redirects").delete().eq("from_path", from);
   updateTag(tags.listings);
   revalidatePath("/admin/seo");
+}
+
+// ---------------------------------------------------------------------------
+// Site theme
+// ---------------------------------------------------------------------------
+
+export async function saveSiteTheme(style: string, color: string): Promise<ActionState> {
+  const { user, supabase } = await staffClient("staff.manage");
+  if (!isThemeStyle(style) || !(STYLE_COLORS[style] as string[]).includes(color)) {
+    return { error: "That style and colour don't go together." };
+  }
+  const { data, error } = await supabase
+    .from("site_settings")
+    .update({ theme_style: style, theme_color: color, updated_by: user.id, updated_at: new Date().toISOString() })
+    .eq("id", true)
+    .select("id");
+  if (error || !data?.length) {
+    return { error: "Could not save. Has the site theme SQL been run in Supabase?" };
+  }
+  updateTag(SITE_THEME_TAG);
+  revalidatePath("/", "layout");
+  return { message: `Saved. The whole site now uses ${themeLabel({ style, color: color as never })}.` };
+}
+
+export async function setOwnerThemes(enabled: boolean): Promise<ActionState> {
+  const { user, supabase } = await staffClient("staff.manage");
+  const { data, error } = await supabase
+    .from("site_settings")
+    .update({ owner_themes: enabled, updated_by: user.id, updated_at: new Date().toISOString() })
+    .eq("id", true)
+    .select("id");
+  if (error || !data?.length) {
+    return { error: "Could not save. Has the site theme SQL been run in Supabase?" };
+  }
+  updateTag(SITE_THEME_TAG);
+  revalidatePath("/", "layout");
+  return {
+    message: enabled
+      ? "Shop owners can now pick a theme for their shop page."
+      : "Owner themes are off. Every shop page uses the site theme.",
+  };
 }

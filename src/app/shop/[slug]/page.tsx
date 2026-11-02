@@ -9,6 +9,7 @@ import { JsonLd } from "@/components/json-ld";
 import { OpenStatus } from "@/components/open-status";
 import { ShopUserTools } from "@/components/shop-user-tools";
 import { getListing, getRedirect } from "@/lib/data/directory";
+import { getShopTheme, getSiteSettings } from "@/lib/data/site-theme";
 import { GENDER_LABELS, formatDate, photoUrl, priceLabel, priceLevelLabel } from "@/lib/format";
 import { weeklySchedule } from "@/lib/hours";
 import { formatMalaysianPhone } from "@/lib/phone";
@@ -58,7 +59,8 @@ export default function ShopPage({ params }: PageProps<"/shop/[slug]">) {
 
 async function Shop({ params }: { params: PageProps<"/shop/[slug]">["params"] }) {
   const { slug } = await params;
-  const listing = await loadListing(slug);
+  const [listing, { ownerThemes }] = await Promise.all([loadListing(slug), getSiteSettings()]);
+  const shopTheme = ownerThemes ? await getShopTheme(listing.slug) : null;
   const category = listing.categories[0];
   const crumbs = [
     { name: "Home", path: "/" },
@@ -74,7 +76,7 @@ async function Shop({ params }: { params: PageProps<"/shop/[slug]">["params"] })
       ? `${listing.lat},${listing.lng}`
       : [listing.name, listing.address].filter(Boolean).join(", ");
 
-  return (
+  const page = (
     <div className="mx-auto max-w-6xl px-4 py-8">
       <JsonLd data={[listingJsonLd(listing), breadcrumbJsonLd(crumbs)]} />
       <Breadcrumbs items={crumbs} />
@@ -271,5 +273,13 @@ async function Shop({ params }: { params: PageProps<"/shop/[slug]">["params"] })
         </a>
       )}
     </div>
+  );
+  // The owner's own theme covers the page between the site header and footer.
+  return shopTheme ? (
+    <div data-style={shopTheme.style} data-color={shopTheme.color}>
+      {page}
+    </div>
+  ) : (
+    page
   );
 }

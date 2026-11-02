@@ -25,3 +25,243 @@ body {
   outline: 2px solid var(--color-brand-500);
   outline-offset: 2px;
 }
+
+/* -------------------------------------------------------------------------
+   Site themes (see src/lib/themes.ts)
+
+   A theme scope is any element with data-style and data-color: <body> for the
+   whole site, and the small previews in /admin/theme. The colour rules
+   (generated from themes.ts) set --p-* and --a-*. Everything below is CSS
+   variables computed on the scope element itself, so a preview inside a page
+   with another theme still looks right.
+   ------------------------------------------------------------------------- */
+
+[data-style] {
+  /* Reset what a style may change, so a scope inside another style (a shop
+     page, an admin preview) starts from the defaults. */
+  --color-ink: #1c1917;
+  --color-muted: #6b6461;
+  --color-line: #ece7e4;
+  --color-canvas: #fbf9f8;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+  --radius-3xl: 1.5rem;
+
+  --color-brand-50: var(--p-50);
+  --color-brand-100: var(--p-100);
+  --color-brand-200: var(--p-200);
+  --color-brand-500: var(--p-500);
+  --color-brand-600: var(--p-600);
+  --color-brand-700: var(--p-700);
+
+  --t-page-bg: var(--color-canvas);
+  --t-surface: #fff;
+  --t-surface-strong: rgb(255 255 255 / 0.9);
+  --t-blur: none;
+  --t-bw: 1px;
+  --t-card-shadow: none;
+  --t-card-shadow-hover: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --t-card-lift: 0 -2px;
+  --t-btn: var(--p-600);
+  --t-btn-hover: var(--p-700);
+  --t-on-btn: #fff;
+  --t-btn-border: transparent;
+  --t-strong: var(--color-ink);
+  --t-strong-hover: #000;
+  --t-on-strong: #fff;
+  --t-pill: calc(infinity * 1px);
+  --t-head-font: var(--font-sans);
+  --t-head-weight: 700;
+  --t-head-tracking: -0.02em;
+  --t-hero-bg: transparent;
+  --t-hero-top: 0 solid transparent;
+  --t-hero-bottom: 0 solid transparent;
+  --t-hero-size: 2.25rem;
+  --t-hero-leading: 1.1;
+
+  background: var(--t-page-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+@media (min-width: 640px) {
+  [data-style] {
+    --t-hero-size: 3rem;
+  }
+}
+
+/* Glassmorphism: frosted cards over a soft two-colour glow. */
+[data-style="glass"] {
+  --font-sans: var(--ff-glass), ui-sans-serif, system-ui, sans-serif;
+  --color-line: rgb(255 255 255 / 0.7);
+  --color-muted: #57534e;
+  --t-page-bg:
+    radial-gradient(ellipse at 10% 0%, var(--p-300) 0, transparent 50%),
+    radial-gradient(ellipse at 90% 15%, var(--a-300) 0, transparent 45%),
+    radial-gradient(ellipse at 60% 100%, var(--a-200) 0, transparent 55%),
+    radial-gradient(ellipse at 0% 80%, var(--p-200) 0, transparent 45%),
+    var(--p-50);
+  --t-surface: rgb(255 255 255 / 0.5);
+  --t-surface-strong: rgb(255 255 255 / 0.55);
+  --t-blur: blur(18px) saturate(160%);
+  --t-card-shadow: 0 8px 32px -12px rgb(31 38 135 / 0.18), inset 0 1px 0 rgb(255 255 255 / 0.6);
+  --t-card-shadow-hover: 0 16px 40px -12px rgb(31 38 135 / 0.28), inset 0 1px 0 rgb(255 255 255 / 0.6);
+  --t-btn: linear-gradient(135deg, var(--p-600), var(--a-600));
+  --t-btn-hover: linear-gradient(135deg, var(--p-700), var(--a-700));
+  --t-strong: linear-gradient(135deg, var(--p-700), var(--a-600));
+  --t-strong-hover: linear-gradient(135deg, var(--p-700), var(--a-700));
+  --t-head-weight: 700;
+  --radius-lg: 0.875rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-3xl: 2rem;
+  background-attachment: fixed;
+}
+
+/* Neo-brutalism: thick black outlines, hard offset shadows, bright fills. */
+[data-style="brutal"] {
+  --font-sans: var(--ff-brutal), ui-sans-serif, system-ui, sans-serif;
+  --color-ink: #000;
+  --color-muted: #3f3f46;
+  --color-line: #000;
+  --t-page-bg: var(--p-100);
+  --t-surface: #fff;
+  --t-surface-strong: #fff;
+  --t-bw: 2px;
+  --t-card-shadow: 4px 4px 0 0 #000;
+  --t-card-shadow-hover: 7px 7px 0 0 #000;
+  --t-card-lift: -3px -3px;
+  --t-btn: var(--p-bright);
+  --t-btn-hover: var(--p-bright);
+  --t-on-btn: var(--p-on-bright);
+  --t-btn-border: #000;
+  --t-strong: #000;
+  --t-strong-hover: #27272a;
+  --t-pill: 0.5rem;
+  --t-head-weight: 700;
+  --t-head-tracking: -0.03em;
+  --t-hero-bg: var(--p-bright);
+  --t-hero-bottom: 2px solid #000;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.5rem;
+  --radius-2xl: 0.75rem;
+  --radius-3xl: 0.75rem;
+}
+
+/* Minimalism: white, thin lines, light type, colour used sparingly. */
+[data-style="minimal"] {
+  --font-sans: var(--ff-minimal), ui-sans-serif, system-ui, sans-serif;
+  --color-ink: #111;
+  --color-muted: #737373;
+  --color-line: #ededed;
+  --color-brand-50: #fafafa;
+  --t-page-bg: #fff;
+  --t-surface: #fff;
+  --t-surface-strong: rgb(255 255 255 / 0.95);
+  --t-card-shadow-hover: none;
+  --t-card-lift: 0 0;
+  --t-strong: #111;
+  --t-head-weight: 500;
+  --t-head-tracking: -0.03em;
+  --radius-lg: 0.375rem;
+  --radius-xl: 0.5rem;
+  --radius-2xl: 0.75rem;
+  --radius-3xl: 1rem;
+}
+
+/* Swiss style: strict, sharp, big tight headlines and one strong colour. */
+[data-style="swiss"] {
+  --font-sans: var(--ff-swiss), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --color-ink: #0a0a0a;
+  --color-muted: #525252;
+  --color-line: #0a0a0a;
+  --t-page-bg: #fff;
+  --t-surface: #fff;
+  --t-surface-strong: #fff;
+  --t-card-shadow-hover: none;
+  --t-card-lift: 0 0;
+  --t-strong: var(--p-600);
+  --t-strong-hover: var(--p-700);
+  --t-pill: 0;
+  --t-head-weight: 800;
+  --t-head-tracking: -0.045em;
+  --t-hero-top: 14px solid var(--p-600);
+  --t-hero-size: 2.75rem;
+  --t-hero-leading: 0.95;
+  --radius-lg: 0;
+  --radius-xl: 0;
+  --radius-2xl: 0;
+  --radius-3xl: 0;
+}
+
+@media (min-width: 640px) {
+  [data-style="swiss"] {
+    --t-hero-size: 4.5rem;
+  }
+}
+
+/* Overrides of Tailwind utilities, for every style except classic (which is
+   the plain Tailwind look). Unlayered, so they win over the utilities. */
+:where([data-style]:not([data-style="classic"])) {
+  & .bg-white {
+    background-color: var(--t-surface);
+    backdrop-filter: var(--t-blur);
+  }
+  & .bg-white\/90,
+  & .bg-white\/95 {
+    background-color: var(--t-surface-strong);
+  }
+  & .border {
+    border-width: var(--t-bw);
+  }
+  & .border-t {
+    border-top-width: var(--t-bw);
+  }
+  & .border-b {
+    border-bottom-width: var(--t-bw);
+  }
+  & .bg-white.border {
+    box-shadow: var(--t-card-shadow);
+  }
+  & a.bg-white.border {
+    transition: translate 0.15s, box-shadow 0.15s, border-color 0.15s;
+  }
+  & a.bg-white.border:hover {
+    box-shadow: var(--t-card-shadow-hover);
+    translate: var(--t-card-lift);
+  }
+  & .bg-brand-600 {
+    background: var(--t-btn);
+    color: var(--t-on-btn);
+    box-shadow: 0 0 0 var(--t-bw) var(--t-btn-border);
+  }
+  & .hover\:bg-brand-700:hover {
+    background: var(--t-btn-hover);
+  }
+  & .bg-ink {
+    background: var(--t-strong);
+    color: var(--t-on-strong);
+  }
+  & .hover\:bg-black:hover {
+    background: var(--t-strong-hover);
+  }
+  & .rounded-full {
+    border-radius: var(--t-pill);
+  }
+  & :is(h1, h2, h3) {
+    font-family: var(--t-head-font);
+    font-weight: var(--t-head-weight);
+    letter-spacing: var(--t-head-tracking);
+  }
+  & .theme-hero {
+    background: var(--t-hero-bg);
+    border-top: var(--t-hero-top);
+    border-bottom: var(--t-hero-bottom);
+  }
+  & .theme-hero h1 {
+    font-size: var(--t-hero-size);
+    line-height: var(--t-hero-leading);
+  }
+}

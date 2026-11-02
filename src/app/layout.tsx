@@ -1,9 +1,22 @@
 import type { Metadata, Viewport } from "next";
+import { Inter_Tight, Manrope, Plus_Jakarta_Sans, Space_Grotesk } from "next/font/google";
 import Link from "next/link";
 import { Suspense } from "react";
+import { ThemePreviewBar } from "@/components/theme-preview-bar";
 import { UserMenu } from "@/components/user-menu";
+import { getSiteTheme } from "@/lib/data/site-theme";
 import { siteUrl } from "@/lib/env";
+import { paletteCss, themeColorHex } from "@/lib/themes";
 import "./globals.css";
+
+// One font per theme style. Not preloaded: the browser only downloads the one
+// the current theme uses.
+const glassFont = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--ff-glass", preload: false });
+const brutalFont = Space_Grotesk({ subsets: ["latin"], variable: "--ff-brutal", preload: false });
+const minimalFont = Manrope({ subsets: ["latin"], variable: "--ff-minimal", preload: false });
+const swissFont = Inter_Tight({ subsets: ["latin"], variable: "--ff-swiss", preload: false });
+const fontVars = [glassFont, brutalFont, minimalFont, swissFont].map((f) => f.variable).join(" ");
+const PALETTE_CSS = paletteCss();
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -17,14 +30,18 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
 };
 
-export const viewport: Viewport = {
-  themeColor: "#c22c62",
-};
+export async function generateViewport(): Promise<Viewport> {
+  return { themeColor: themeColorHex(await getSiteTheme()) };
+}
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const theme = await getSiteTheme();
   return (
-    <html lang="en-MY" className="h-full antialiased">
-      <body className="flex min-h-full flex-col">
+    <html lang="en-MY" className={`h-full antialiased ${fontVars}`}>
+      <head>
+        <style dangerouslySetInnerHTML={{ __html: PALETTE_CSS }} />
+      </head>
+      <body className="flex min-h-full flex-col" data-style={theme.style} data-color={theme.color}>
         <header className="sticky top-0 z-30 border-b border-line bg-white/90 backdrop-blur">
           <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4">
             <Link href="/" className="text-lg font-bold tracking-tight">
@@ -63,6 +80,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             </ul>
           </div>
         </footer>
+        <ThemePreviewBar />
       </body>
     </html>
   );

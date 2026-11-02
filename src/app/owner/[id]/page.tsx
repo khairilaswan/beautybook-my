@@ -3,11 +3,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { DetailsForm, HoursEditor, PhotoManager, ServicesEditor } from "@/app/owner/[id]/editors";
+import { ShopThemePicker } from "@/app/owner/[id]/shop-theme";
 import { RequestStatusButtons } from "@/components/request-status-buttons";
 import { requireUser } from "@/lib/auth";
 import { getAttributes } from "@/lib/data/directory";
+import { getSiteSettings } from "@/lib/data/site-theme";
 import { daysAgoIso, formatDate } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
+import { normalizeTheme } from "@/lib/themes";
 
 export const metadata: Metadata = { title: "Manage your listing", robots: { index: false } };
 
@@ -71,6 +74,12 @@ async function Dashboard({
   ]);
   if (!listing.data) notFound();
   const l = listing.data;
+  const settings = await getSiteSettings();
+  // Read with the owner's session: the public read can't see a listing that isn't live yet.
+  const ownTheme = settings.ownerThemes
+    ? (await supabase.from("listings").select("theme_style, theme_color").eq("id", id).single()).data
+    : null;
+  const shopTheme = ownTheme?.theme_style ? normalizeTheme(ownTheme.theme_style, ownTheme.theme_color) : null;
 
   return (
     <div className="space-y-10">
@@ -147,6 +156,14 @@ async function Dashboard({
         <h2 className="text-lg font-semibold">Photos</h2>
         <PhotoManager listingId={l.id} slug={l.slug} photos={photos.data ?? []} />
       </section>
+
+      {settings.ownerThemes && (
+        <section>
+          <h2 className="text-lg font-semibold">Shop page theme</h2>
+          <p className="text-sm text-muted">Give your shop page its own style and colour.</p>
+          <ShopThemePicker listingId={l.id} slug={l.slug} current={shopTheme} siteTheme={settings.theme} />
+        </section>
+      )}
     </div>
   );
 }

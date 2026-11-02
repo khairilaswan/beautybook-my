@@ -252,5 +252,63 @@ do $$ begin
   end if;
 end $$;
 
+-- Site theme ---------------------------------------------------------------
+set local role anon;
+select set_config('request.jwt.claim.sub', '', true);
+do $$ begin
+  if (select theme_style from public.site_settings) is distinct from 'classic' then
+    raise exception 'anon cannot read the site theme';
+  end if;
+end $$;
+
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '10000000-0000-4000-8000-000000000004', true);
+do $$
+declare n int;
+begin
+  update public.site_settings set theme_style = 'glass';
+  get diagnostics n = row_count;
+  if n <> 0 then
+    raise exception 'an editor changed the site theme';
+  end if;
+end $$;
+
+select set_config('request.jwt.claim.sub', '10000000-0000-4000-8000-000000000001', true);
+do $$
+declare n int;
+begin
+  update public.site_settings set theme_style = 'swiss', theme_color = 'red';
+  get diagnostics n = row_count;
+  if n <> 1 then
+    raise exception 'the owner could not change the site theme';
+  end if;
+end $$;
+
+-- A shop's own member can set its theme; a customer can't.
+select set_config('request.jwt.claim.sub', '10000000-0000-4000-8000-000000000002', true);
+do $$
+declare n int;
+begin
+  update public.listings set theme_style = 'brutal', theme_color = 'yellow'
+  where id = '00000000-0000-4000-8000-000000000001';
+  get diagnostics n = row_count;
+  if n <> 1 then
+    raise exception 'a shop owner could not set their shop theme';
+  end if;
+end $$;
+
+select set_config('request.jwt.claim.sub', '10000000-0000-4000-8000-000000000003', true);
+do $$
+declare n int;
+begin
+  update public.listings set theme_style = 'glass'
+  where id = '00000000-0000-4000-8000-000000000001';
+  get diagnostics n = row_count;
+  if n <> 0 then
+    raise exception 'a customer changed a shop theme';
+  end if;
+end $$;
+reset role;
+
 select 'all RLS checks passed' as result;
 rollback;
