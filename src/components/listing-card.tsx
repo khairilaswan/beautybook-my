@@ -50,7 +50,7 @@ export function ListingCard({
         <div className="space-y-1 p-4">
           <h3 className="font-semibold leading-snug group-hover:text-brand-700">{listing.name}</h3>
           <p className="text-sm text-muted">
-            {[category && categoryName(category, locale), area, listing.distance_km !== null ? `${listing.distance_km} km` : null]
+            {[category && categoryName(category, locale), listing.mall_name ?? area, listing.distance_km !== null ? `${listing.distance_km} km` : null]
               .filter(Boolean)
               .join(" · ")}
           </p>

@@ -34,6 +34,7 @@ const listingSchema = z.object({
   facebook: z.url().or(z.literal("")),
   priceLevel: z.enum(["", "1", "2", "3", "4"]),
   gender: z.enum(["", "men", "women", "unisex"]),
+  mall: z.string().max(120).default(""),
 });
 
 export type FormState = { message?: string; error?: string };
@@ -46,9 +47,12 @@ export async function updateListingDetails(_prev: FormState, form: FormData): Pr
   if (!parsed.success) return { error: "Please check the links are full addresses starting with https://" };
   const d = parsed.data;
   const supabase = await createClient();
+  const mall = d.mall ? (await supabase.from("malls").select("id").eq("slug", d.mall).maybeSingle()).data : null;
+  if (d.mall && !mall) return { error: "Please choose a mall from the list." };
   const { error } = await supabase
     .from("listings")
     .update({
+      mall_id: mall?.id ?? null,
       description: d.description || null,
       website: d.website || null,
       instagram: d.instagram || null,

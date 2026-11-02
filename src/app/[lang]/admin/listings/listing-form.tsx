@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { type ActionState, saveListing } from "@/app/[lang]/admin/actions";
-import type { Area, Attribute, Category } from "@/lib/types";
+import type { Area, Attribute, Category, Mall } from "@/lib/types";
 
 const input = "mt-1 w-full rounded-xl border border-line bg-white px-3 py-2";
 
@@ -12,6 +12,7 @@ export type AdminListing = {
   slug: string;
   status: string;
   area_slug: string | null;
+  mall_slug: string | null;
   address: string | null;
   postcode: string | null;
   lat: number | null;
@@ -30,9 +31,9 @@ export type AdminListing = {
   attribute_ids: number[];
 };
 
-type Props = { listing: AdminListing | null; areas: Area[]; categories: Category[]; attributes: Attribute[] };
+type Props = { listing: AdminListing | null; areas: Area[]; categories: Category[]; attributes: Attribute[]; malls: Mall[] };
 
-export function ListingForm({ listing, areas, categories, attributes }: Props) {
+export function ListingForm({ listing, areas, categories, attributes, malls }: Props) {
   const [state, action, pending] = useActionState<ActionState, FormData>(saveListing, {});
   const l = listing;
   return (
@@ -51,6 +52,13 @@ export function ListingForm({ listing, areas, categories, attributes }: Props) {
           <select name="area" required defaultValue={l?.area_slug ?? ""} className={input}>
             <option value="">Choose…</option>
             {areas.map((a) => <option key={a.slug} value={a.slug}>{a.type === "area" ? `— ${a.name}` : a.name}</option>)}
+          </select></label>
+        <label className="block"><span className="font-medium">Shopping mall</span>
+          <select name="mall" defaultValue={l?.mall_slug ?? ""} className={input}>
+            <option value="">Not in a mall</option>
+            {[...malls].sort((a, b) => a.name.localeCompare(b.name)).map((m) => (
+              <option key={m.slug} value={m.slug}>{m.name}</option>
+            ))}
           </select></label>
         <label className="block"><span className="font-medium">Main category</span>
           <select name="category" required defaultValue={l?.primary_category ?? ""} className={input}>

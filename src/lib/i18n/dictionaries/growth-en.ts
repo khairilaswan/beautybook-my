@@ -271,4 +271,25 @@ export const growthEn = {
     nudgeText: "Hi {name}, it's been a while since your {service} at {shop}. Book again: {link}",
     stop: "To stop these messages, untick reminders in My account: {url}",
   },
+  malls: {
+    mall: "Shopping mall",
+    anyMall: "Any mall",
+    malls: "Shopping malls",
+    inside: "Inside {mall}",
+    title: "Salons and beauty shops in {mall}",
+    titleCategory: "{category} in {mall}",
+    metaDesc:
+      "Find {count} salons, barbers, nail and beauty shops inside {mall}. See services and prices, then book on WhatsApp.",
+    indexTitle: "Salons and beauty in shopping malls",
+    indexIntro:
+      "Find hair salons, nail bars, barbers, lash studios and spas inside Klang Valley's shopping malls, so you can fit an appointment around your shopping.",
+    indexMeta: "Salons, barbers, nail and beauty shops in Klang Valley shopping malls, mall by mall.",
+    shopsOne: "1 shop",
+    shopsMany: "{count} shops",
+    noShops: "No shops yet",
+    otherMalls: "Other malls in {area}",
+    allMalls: "All shopping malls",
+    browse: "Browse by shopping mall",
+    seeAllMalls: "See all malls",
+  },
 };

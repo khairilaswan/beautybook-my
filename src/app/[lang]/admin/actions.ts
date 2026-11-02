@@ -40,6 +40,7 @@ const listingSchema = z.object({
   slug: z.string().trim().max(120).optional(),
   status: z.enum(["active", "closed", "hidden", "archived"]),
   area: z.string().min(1, "Choose an area"),
+  mall: z.string().optional(),
   category: z.string().min(1, "Choose a main category"),
   address: z.string().trim().max(300).optional(),
   postcode: z.string().trim().regex(/^(\d{5})?$/, "Postcode should be 5 digits").optional(),
@@ -72,11 +73,13 @@ export async function saveListing(_prev: ActionState, form: FormData): Promise<A
     return { error: "Latitude and longitude must be numbers." };
   }
 
-  const [{ data: area }, { data: categories }] = await Promise.all([
+  const [{ data: area }, { data: categories }, { data: mall }] = await Promise.all([
     supabase.from("areas").select("id, slug").eq("slug", d.area).single(),
     supabase.from("categories").select("id, slug").in("slug", [d.category, ...form.getAll("otherCategories").map(String)]),
+    d.mall ? supabase.from("malls").select("id").eq("slug", d.mall).maybeSingle() : Promise.resolve({ data: null }),
   ]);
   if (!area) return { error: "Unknown area." };
+  if (d.mall && !mall) return { error: "Unknown mall." };
   const primary = categories?.find((c) => c.slug === d.category);
   if (!primary) return { error: "Unknown category." };
 
@@ -97,6 +100,7 @@ export async function saveListing(_prev: ActionState, form: FormData): Promise<A
     slug,
     status: d.status,
     area_id: area.id,
+    mall_id: mall?.id ?? null,
     address: d.address || null,
     postcode: d.postcode || null,
     lat,
@@ -209,11 +213,18 @@ type Resolved = {
 
 async function resolveRows(rows: ImportRow[]) {
   const supabase = await createClient();
-  const [areas, categories, attributes] = await Promise.all([
+  const [areas, categories, attributes, malls] = await Promise.all([
     supabase.from("areas").select("id, slug"),
     supabase.from("categories").select("id, slug"),
     supabase.from("attributes").select("id, slug"),
+    supabase.from("malls").select("id, slug, name"),
   ]);
+  // The mall column takes a slug ("mid-valley-megamall") or the name.
+  const mallByKey = new Map<string, number>();
+  for (const m of malls.data ?? []) {
+    mallByKey.set(m.slug, m.id);
+    mallByKey.set(m.name.toLowerCase(), m.id);
+  }
   const areaBySlug = new Map((areas.data ?? []).map((a) => [a.slug, a.id]));
   const catBySlug = new Map((categories.data ?? []).map((c) => [c.slug, c.id]));
   const attrBySlug = new Map((attributes.data ?? []).map((a) => [a.slug, a.id]));
@@ -246,6 +257,7 @@ async function resolveRows(rows: ImportRow[]) {
     if (!areaBySlug.has(v.area)) errors.push(`unknown area "${v.area}"`);
     for (const c of [v.category, ...v.other_categories]) if (!catBySlug.has(c)) errors.push(`unknown category "${c}"`);
     for (const a of v.attributes) if (!attrBySlug.has(a)) errors.push(`unknown attribute "${a}"`);
+    if (v.mall && !mallByKey.has(v.mall.toLowerCase())) errors.push(`unknown mall "${v.mall}"`);
 
     const existing =
       (v.slug && bySlug.data?.find((l) => l.slug === v.slug)) ||
@@ -278,7 +290,7 @@ async function resolveRows(rows: ImportRow[]) {
     });
     resolved.push({ value: v, line: r.line, existing: existing ? { id: existing.id, slug: existing.slug } : null });
   }
-  return { preview, resolved, areaBySlug, catBySlug, attrBySlug };
+  return { preview, resolved, areaBySlug, catBySlug, attrBySlug, mallByKey };
 }
 
 const rowsSchema = z.array(z.record(z.string(), z.string())).max(MAX_IMPORT_ROWS);
@@ -300,7 +312,7 @@ export async function commitImport(
   const parsed = rowsSchema.safeParse(rows);
   if (!parsed.success) return { error: `The file must have at most ${MAX_IMPORT_ROWS} rows.` };
   const supabase = await createClient();
-  const { resolved, preview, areaBySlug, catBySlug, attrBySlug } = await resolveRows(parsed.data as ImportRow[]);
+  const { resolved, preview, areaBySlug, catBySlug, attrBySlug, mallByKey } = await resolveRows(parsed.data as ImportRow[]);
 
   const { data: batch, error: batchError } = await supabase
     .from("import_batches")
@@ -316,6 +328,7 @@ export async function commitImport(
       name: v.name,
       status: v.status,
       area_id: areaBySlug.get(v.area)!,
+      mall_id: v.mall ? mallByKey.get(v.mall.toLowerCase())! : null,
       address: v.address,
       postcode: v.postcode,
       lat: v.lat,
@@ -575,6 +588,62 @@ export async function addArea(_prev: ActionState, form: FormData): Promise<Actio
   updateTag(tags.taxonomy);
   revalidateLocalized("/admin/taxonomy");
   return error ? { error: error.code === "23505" ? "That area already exists." : "Could not add." } : { message: `${name} added.` };
+}
+
+const mallSchema = z.object({
+  id: z.string().regex(/^\d*$/).optional(),
+  name: z.string().trim().min(1, "Enter the mall's name.").max(120),
+  slug: z.string().trim().max(120).optional(),
+  area: z.string().optional(),
+  address: z.string().trim().max(300).optional(),
+  lat: z.string().trim().optional(),
+  lng: z.string().trim().optional(),
+  sortOrder: z.string().trim().regex(/^-?\d*$/, "Order must be a whole number").optional(),
+});
+
+// Adds a mall, or updates one when the form carries its id.
+export async function saveMall(_prev: ActionState, form: FormData): Promise<ActionState> {
+  const { supabase } = await staffClient("taxonomy.edit");
+  const parsed = mallSchema.safeParse(Object.fromEntries(form));
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Please check the form." };
+  const d = parsed.data;
+  const lat = d.lat ? Number(d.lat) : null;
+  const lng = d.lng ? Number(d.lng) : null;
+  if ((lat !== null && !(lat >= -90 && lat <= 90)) || (lng !== null && !(lng >= -180 && lng <= 180))) {
+    return { error: "Latitude and longitude must be numbers." };
+  }
+  const { data: area } = d.area
+    ? await supabase.from("areas").select("id").eq("slug", d.area).maybeSingle()
+    : { data: null };
+  const slug = slugify(d.slug || d.name);
+  if (!slug) return { error: "Enter a name with letters or numbers." };
+  const values = {
+    name: d.name,
+    slug,
+    area_id: area?.id ?? null,
+    address: d.address || null,
+    lat,
+    lng,
+    ...(d.sortOrder ? { sort_order: Number(d.sortOrder) } : {}),
+  };
+  const { error } = d.id
+    ? await supabase.from("malls").update(values).eq("id", Number(d.id))
+    : await supabase.from("malls").insert(values);
+  updateTag(tags.taxonomy);
+  updateTag(tags.listings);
+  revalidateLocalized("/admin/taxonomy");
+  if (error) return { error: error.code === "23505" ? "Another mall already uses that name or slug." : "Could not save." };
+  return { message: d.id ? "Saved." : `${d.name} added.` };
+}
+
+// Shops in a deleted mall keep their listing; only the mall tag goes.
+export async function deleteMall(id: number): Promise<ActionState> {
+  const { supabase } = await staffClient("taxonomy.edit");
+  const { error } = await supabase.from("malls").delete().eq("id", id);
+  updateTag(tags.taxonomy);
+  updateTag(tags.listings);
+  revalidateLocalized("/admin/taxonomy");
+  return error ? { error: "Could not delete." } : { message: "Deleted." };
 }
 
 export async function addCategory(_prev: ActionState, form: FormData): Promise<ActionState> {

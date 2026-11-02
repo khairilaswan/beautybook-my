@@ -7,6 +7,7 @@ import type {
   Category,
   ListingCard,
   ListingDetail,
+  Mall,
   SearchParams,
 } from "@/lib/types";
 
@@ -61,6 +62,34 @@ export async function getAttributes(): Promise<Attribute[]> {
     .order("sort_order");
   if (error) throw error;
   return data as Attribute[];
+}
+
+export async function getMalls(): Promise<Mall[]> {
+  "use cache";
+  cacheLife("days");
+  cacheTag(tags.taxonomy);
+  const { data, error } = await createPublicClient()
+    .from("malls")
+    .select("id, slug, name, area_id, address, lat, lng, sort_order")
+    .order("sort_order")
+    .order("name");
+  if (error) throw error;
+  return data as Mall[];
+}
+
+export async function getMall(slug: string): Promise<Mall | null> {
+  const malls = await getMalls();
+  return malls.find((m) => m.slug === slug) ?? null;
+}
+
+// Active shops per mall slug.
+export async function getMallCounts(): Promise<Map<string, number>> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag(tags.listings);
+  const { data, error } = await createPublicClient().rpc("mall_counts");
+  if (error) throw error;
+  return new Map((data as { mall_slug: string; listing_count: number }[]).map((r) => [r.mall_slug, Number(r.listing_count)]));
 }
 
 export async function getCategory(slug: string): Promise<Category | null> {
@@ -148,6 +177,7 @@ export async function searchListings(params: SearchParams): Promise<{
     p_radius_km: params.near ? (params.radiusKm ?? 15) : null,
     p_sort: params.sort ?? null,
     p_slugs: params.slugs?.length ? params.slugs : null,
+    p_mall: params.mall || null,
     p_limit: pageSize,
     p_offset: (page - 1) * pageSize,
   });
@@ -186,7 +216,8 @@ export async function getListing(slug: string): Promise<ListingDetail | null> {
        listing_service_areas ( area_id ),
        booking_settings ( instant_enabled, slot_minutes, capacity, min_notice_hours, max_days_ahead ),
        voucher_settings ( enabled, amounts, valid_months, terms ),
-       loyalty_programs ( enabled, stamps_required, reward )`,
+       loyalty_programs ( enabled, stamps_required, reward ),
+       malls ( slug, name )`,
     )
     .eq("slug", slug)
     .maybeSingle();
@@ -197,7 +228,7 @@ export async function getListing(slug: string): Promise<ListingDetail | null> {
     ListingDetail,
     | "is_claimed" | "area" | "area_path" | "categories" | "attributes" | "services" | "services_are_template"
     | "hours" | "closures" | "photos" | "staff" | "promotions" | "packages" | "service_areas" | "booking"
-    | "vouchers" | "loyalty"
+    | "vouchers" | "loyalty" | "mall"
   > & {
     area_id: number | null;
     listing_categories: { is_primary: boolean; categories: Category }[];
@@ -214,6 +245,7 @@ export async function getListing(slug: string): Promise<ListingDetail | null> {
     booking_settings: ListingDetail["booking"];
     voucher_settings: ListingDetail["vouchers"];
     loyalty_programs: ListingDetail["loyalty"];
+    malls: ListingDetail["mall"];
   };
   const row = data as unknown as Row;
 
@@ -269,6 +301,7 @@ export async function getListing(slug: string): Promise<ListingDetail | null> {
     updated_at: row.updated_at,
     is_claimed: claimed.data === true,
     area,
+    mall: row.malls ?? null,
     area_path: areaPath(areas, area),
     categories,
     attributes: row.listing_attributes.map((la) => la.attributes),

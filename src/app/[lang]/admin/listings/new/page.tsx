@@ -1,6 +1,6 @@
 import { ListingForm } from "@/app/[lang]/admin/listings/listing-form";
 import { requirePermission } from "@/lib/auth";
-import { getAreas, getAttributes, getCategories } from "@/lib/data/directory";
+import { getAreas, getAttributes, getCategories, getMalls } from "@/lib/data/directory";
 import { Suspense } from "react";
 
 // Auth runs inside Suspense so client navigations between admin pages stream
@@ -15,11 +15,11 @@ export default function Page() {
 
 async function NewListingPage() {
   await requirePermission("listings.edit");
-  const [areas, categories, attributes] = await Promise.all([getAreas(), getCategories(), getAttributes()]);
+  const [areas, categories, attributes, malls] = await Promise.all([getAreas(), getCategories(), getAttributes(), getMalls()]);
   return (
     <>
       <h1 className="mb-4 text-2xl font-bold">New listing</h1>
-      <ListingForm listing={null} areas={areas} categories={categories} attributes={attributes} />
+      <ListingForm listing={null} areas={areas} categories={categories} attributes={attributes} malls={malls} />
     </>
   );
 }

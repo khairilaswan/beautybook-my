@@ -1,14 +1,19 @@
 import Link from "next/link";
 import { JsonLd } from "@/components/json-ld";
 import { RecentSearches } from "@/components/recent-searches";
-import { getAreas, getCategories } from "@/lib/data/directory";
-import { hubPath } from "@/lib/paths";
+import { getAreas, getCategories, getMalls } from "@/lib/data/directory";
+import { hubPath, mallPath } from "@/lib/paths";
 import { areaName, categoryName } from "@/lib/i18n/names";
 import { getI18n } from "@/lib/i18n/server";
 import { siteJsonLd } from "@/lib/seo";
 
 export default async function HomePage() {
-  const [categories, areas, { locale, t, href }] = await Promise.all([getCategories(), getAreas(), getI18n()]);
+  const [categories, areas, malls, { locale, t, href }] = await Promise.all([
+    getCategories(),
+    getAreas(),
+    getMalls(),
+    getI18n(),
+  ]);
   const cities = areas.filter((a) => a.type === "city");
 
   return (
@@ -79,6 +84,29 @@ export default async function HomePage() {
           ))}
         </ul>
       </section>
+
+      {malls.length > 0 && (
+        <section className="mx-auto max-w-6xl px-4 py-6">
+          <h2 className="text-xl font-semibold">{t.growth.malls.browse}</h2>
+          <ul className="mt-4 flex flex-wrap gap-2">
+            {malls.slice(0, 12).map((m) => (
+              <li key={m.slug}>
+                <Link
+                  href={href(mallPath(m.slug))}
+                  className="inline-block rounded-full border border-line bg-white px-4 py-2 text-sm hover:border-brand-200"
+                >
+                  {m.name}
+                </Link>
+              </li>
+            ))}
+            <li>
+              <Link href={href(mallPath())} className="inline-block px-2 py-2 text-sm underline">
+                {t.growth.malls.seeAllMalls}
+              </Link>
+            </li>
+          </ul>
+        </section>
+      )}
 
       <section className="mx-auto max-w-6xl px-4 py-10">
         <div className="grid gap-6 rounded-3xl bg-ink p-8 text-white sm:grid-cols-[2fr_1fr] sm:items-center">
