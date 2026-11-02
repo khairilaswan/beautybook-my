@@ -8,7 +8,17 @@ import { Breadcrumbs } from "@/components/breadcrumbs";
 import { JsonLd } from "@/components/json-ld";
 import { OpenStatus } from "@/components/open-status";
 import { ShopUserTools } from "@/components/shop-user-tools";
-import { getListing, getRedirect } from "@/lib/data/directory";
+import { CompareButton } from "@/components/compare";
+import { DealsSection } from "@/components/shop/deals-section";
+import { PackagesSection } from "@/components/shop/packages-section";
+import { Portfolio } from "@/components/shop/portfolio";
+import { ReviewsSection } from "@/components/shop/reviews-section";
+import { StaffSection } from "@/components/shop/staff-section";
+import { TrackListing } from "@/components/shop/track-listing";
+import { getFeatureSettings } from "@/lib/data/features";
+import { getRatingSummary } from "@/lib/data/reviews";
+import { paymentsEnabled } from "@/lib/setup";
+import { getCategories, getListing, getRedirect } from "@/lib/data/directory";
 import { getShopTheme, getSiteSettings } from "@/lib/data/site-theme";
 import { formatDate, photoUrl, priceLabel, priceLevelLabel } from "@/lib/format";
 import { weeklySchedule } from "@/lib/hours";
@@ -70,7 +80,16 @@ export default function ShopPage({ params }: PageProps<"/[lang]/salon/[slug]">) 
 
 async function Shop({ params }: { params: PageProps<"/[lang]/salon/[slug]">["params"] }) {
   const [{ slug }, { locale, t, href }] = await Promise.all([params, getI18n()]);
-  const [listing, { ownerThemes }] = await Promise.all([loadListing(slug, href), getSiteSettings()]);
+  const [listing, { ownerThemes }, features, categories] = await Promise.all([
+    loadListing(slug, href),
+    getSiteSettings(),
+    getFeatureSettings(),
+    getCategories(),
+  ]);
+  const g = t.growth.shop;
+  const rating = features.reviewsEnabled ? await getRatingSummary(listing.id) : null;
+  const shopPhotos = listing.photos.filter((p) => p.kind !== "portfolio");
+  const portfolio = listing.photos.filter((p) => p.kind === "portfolio");
   const shopTheme = ownerThemes ? await getShopTheme(listing.slug) : null;
   const category = listing.categories[0];
   const crumbs = [
@@ -93,7 +112,8 @@ async function Shop({ params }: { params: PageProps<"/[lang]/salon/[slug]">["par
 
   const page = (
     <div className="mx-auto max-w-6xl px-4 py-8">
-      <JsonLd data={[listingJsonLd(listing), breadcrumbJsonLd(crumbs)]} />
+      <JsonLd data={[listingJsonLd(listing, rating), breadcrumbJsonLd(crumbs)]} />
+      <TrackListing listingId={listing.id} />
       <Breadcrumbs items={crumbs} />
 
       {listing.status === "closed" && (
@@ -118,16 +138,27 @@ async function Shop({ params }: { params: PageProps<"/[lang]/salon/[slug]">["par
             {listing.is_claimed ? (
               <span className="rounded-full bg-brand-50 px-2.5 py-0.5 text-brand-700">{t.shop.managedByOwner}</span>
             ) : null}
+            {rating && rating.count > 0 && (
+              <a href="#reviews" className="rounded-full bg-white px-2.5 py-0.5 font-medium">
+                ★ {rating.average} ({rating.count})
+              </a>
+            )}
+            {listing.booking?.instant_enabled && (
+              <span className="rounded-full bg-green-50 px-2.5 py-0.5 text-whatsapp">{g.instant}</span>
+            )}
           </div>
         </div>
-        <Suspense>
-          <ShopUserTools listingId={listing.id} slug={listing.slug} />
-        </Suspense>
+        <div className="flex flex-col items-end gap-2">
+          <Suspense>
+            <ShopUserTools listingId={listing.id} slug={listing.slug} />
+          </Suspense>
+          <CompareButton slug={listing.slug} name={listing.name} />
+        </div>
       </div>
 
-      {listing.photos.length > 0 && (
+      {shopPhotos.length > 0 && (
         <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {listing.photos.slice(0, 5).map((p, i) => (
+          {shopPhotos.slice(0, 5).map((p, i) => (
             <div
               key={p.id}
               className={`relative overflow-hidden rounded-2xl bg-brand-50 ${i === 0 ? "col-span-2 row-span-2 aspect-square" : "aspect-square"}`}
@@ -154,6 +185,13 @@ async function Shop({ params }: { params: PageProps<"/[lang]/salon/[slug]">["par
             </section>
           )}
 
+          {listing.promotions.length > 0 && (
+            <section>
+              <h2 className="text-xl font-semibold">{g.deals}</h2>
+              <DealsSection promotions={listing.promotions} bookable={isOpenForRequests} />
+            </section>
+          )}
+
           <section>
             <h2 className="text-xl font-semibold">{t.shop.services}</h2>
             {listing.services.length === 0 ? (
@@ -177,6 +215,49 @@ async function Shop({ params }: { params: PageProps<"/[lang]/salon/[slug]">["par
               <p className="mt-2 text-sm text-muted">{t.shop.templateNote}</p>
             )}
           </section>
+
+          {listing.packages.length > 0 && (
+            <section>
+              <h2 className="text-xl font-semibold">{g.packages}</h2>
+              <PackagesSection listingId={listing.id} packages={listing.packages} canRequest={isOpenForRequests} />
+            </section>
+          )}
+
+          {portfolio.length > 0 && (
+            <section>
+              <h2 className="text-xl font-semibold">{g.ourWork}</h2>
+              <Portfolio photos={portfolio} categories={categories} shopName={listing.name} />
+            </section>
+          )}
+
+          {listing.staff.length > 0 && (
+            <section>
+              <h2 className="text-xl font-semibold">{g.ourTeam}</h2>
+              <StaffSection staff={listing.staff} bookable={isOpenForRequests} />
+            </section>
+          )}
+
+          {features.reviewsEnabled && (
+            <Suspense>
+              <ReviewsSection listingId={listing.id} />
+            </Suspense>
+          )}
+
+          {listing.service_areas.length > 0 && (
+            <section>
+              <h2 className="text-xl font-semibold">{g.comesToYou}</h2>
+              <p className="mt-2">
+                {g.visitsIn}{" "}
+                {listing.service_areas.map((a, i) => (
+                  <span key={a.slug}>
+                    {i > 0 && (i === listing.service_areas.length - 1 ? g.and : ", ")}
+                    <Link href={href(hubPath(a.slug))} className="underline">{areaName(a, locale)}</Link>
+                  </span>
+                ))}
+                .
+              </p>
+            </section>
+          )}
 
           {listing.attributes.length > 0 && (
             <section>
@@ -248,9 +329,18 @@ async function Shop({ params }: { params: PageProps<"/[lang]/salon/[slug]">["par
         <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
           {isOpenForRequests ? (
             <div id="book" className="scroll-mt-20 rounded-2xl border border-line bg-white p-5 shadow-sm">
-              <h2 className="text-lg font-semibold">{t.shop.requestBooking}</h2>
+              <h2 className="text-lg font-semibold">
+                {listing.is_claimed && listing.booking?.instant_enabled ? g.bookTime : t.shop.requestBooking}
+              </h2>
               <div className="mt-3">
-                <BookingForm listingId={listing.id} services={listing.services} hours={listing.hours} />
+                <BookingForm
+                  listingId={listing.id}
+                  services={listing.services}
+                  hours={listing.hours}
+                  staff={listing.staff}
+                  promotions={listing.promotions}
+                  instant={listing.is_claimed ? listing.booking : null}
+                />
               </div>
             </div>
           ) : null}
@@ -262,10 +352,27 @@ async function Shop({ params }: { params: PageProps<"/[lang]/salon/[slug]">["par
               {fmt(t.shop.call, { phone: formatMalaysianPhone(listing.phone) })}
             </a>
           )}
+          {listing.loyalty && (
+            <div className="rounded-2xl border border-dashed border-brand-200 bg-white p-4 text-sm">
+              <p className="font-semibold">{g.stampCard}</p>
+              <p className="mt-1 text-muted">
+                {fmt(g.stampCardBody, { count: listing.loyalty.stamps_required })}{" "}
+                <strong className="text-ink">{listing.loyalty.reward}</strong>
+              </p>
+            </div>
+          )}
+          {listing.vouchers && paymentsEnabled() && listing.status === "active" && (
+            <Link
+              href={href(`${listingPath(listing.slug)}/gift`)}
+              className="flex w-full items-center justify-center rounded-xl border border-brand-600 px-4 py-3 font-semibold text-brand-700 hover:bg-brand-50"
+            >
+              🎁 {g.giftVoucher}
+            </Link>
+          )}
           <div className="flex flex-wrap gap-3 text-sm">
             {listing.instagram && <a href={listing.instagram} target="_blank" rel="noopener noreferrer nofollow" className="underline">Instagram</a>}
             {listing.facebook && <a href={listing.facebook} target="_blank" rel="noopener noreferrer nofollow" className="underline">Facebook</a>}
-            {listing.website && <a href={listing.website} target="_blank" rel="noopener noreferrer nofollow" className="underline">{t.shop.website}</a>}
+            {listing.website && <a data-track="website" href={listing.website} target="_blank" rel="noopener noreferrer nofollow" className="underline">{t.shop.website}</a>}
           </div>
           {!listing.is_claimed && listing.status === "active" && (
             <div className="rounded-2xl bg-ink p-5 text-white">

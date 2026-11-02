@@ -1,4 +1,5 @@
 import type { Dictionary } from "@/lib/i18n/dictionaries/en";
+import { growthMs } from "@/lib/i18n/dictionaries/growth-ms";
 
 // Bahasa Melayu (Malaysia). Same keys as en.ts.
 export const ms: Dictionary = {
@@ -162,6 +163,9 @@ export const ms: Dictionary = {
       name: "Nama: {name}",
       note: "Nota: {note}",
       confirm: "Sahkan di sini: {url}",
+      greetingBooked: "Hai {shop}! Saya baru menempah slot melalui BeautyBook.my",
+      time: "Masa: {time}",
+      booking: "Tempahan: {url}",
     },
   },
   userTools: {
@@ -394,4 +398,5 @@ export const ms: Dictionary = {
     accountAfter:
       ". Untuk memadam akaun anda, hubungi kami dan kami akan membuangnya bersama nota, kegemaran dan sejarah anda.",
   },
+  growth: growthMs,
 };

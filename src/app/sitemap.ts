@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { MIN_INDEXABLE_LISTINGS, countInTree, getAreas, getCategories, getHubCounts, getListingSlugs } from "@/lib/data/directory";
 import { LOCALES, languageAlternates, localePath } from "@/lib/i18n/config";
 import { hubPath, listingPath } from "@/lib/paths";
+import { getGuides } from "@/lib/data/content";
 import { absoluteUrl } from "@/lib/seo";
 import { membersOnly } from "@/lib/site-access";
 
@@ -18,11 +19,12 @@ function localized(entries: Entry[]): MetadataRoute.Sitemap {
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   if (membersOnly) return [];
-  const [areas, categories, counts, listings] = await Promise.all([
+  const [areas, categories, counts, listings, guides] = await Promise.all([
     getAreas(),
     getCategories(),
     getHubCounts(),
     getListingSlugs(),
+    getGuides(),
   ]);
   const hubs: Entry[] = [];
   for (const area of areas) {
@@ -35,9 +37,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       }
     }
   }
-  return localized([
+  // Guides are written in English only, so they are listed once.
+  const englishOnly: MetadataRoute.Sitemap = [
+    { url: absoluteUrl("/guides"), changeFrequency: "weekly", priority: 0.7 },
+    ...guides.map((g) => ({
+      url: absoluteUrl(`/guides/${g.slug}`),
+      lastModified: g.updated_at,
+      changeFrequency: "monthly" as const,
+      priority: 0.8,
+    })),
+  ];
+  return [
+    ...localized([
     { path: "/", changeFrequency: "daily", priority: 1 },
     { path: "/for-business", changeFrequency: "monthly", priority: 0.5 },
+    { path: "/deals", changeFrequency: "daily", priority: 0.6 },
     ...hubs,
     ...listings.map((l) => ({
       path: listingPath(l.slug),
@@ -45,5 +59,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly" as const,
       priority: 0.7,
     })),
-  ]);
+  ]),
+    ...englishOnly,
+  ];
 }

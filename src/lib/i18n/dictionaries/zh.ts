@@ -1,4 +1,5 @@
 import type { Dictionary } from "@/lib/i18n/dictionaries/en";
+import { growthZh } from "@/lib/i18n/dictionaries/growth-zh";
 
 // 简体中文（马来西亚）. Same keys as en.ts. Uses Malaysian usage where it
 // differs from China (e.g. 巴生谷, 发廊, 理发店).
@@ -157,6 +158,9 @@ export const zh: Dictionary = {
       name: "名字：{name}",
       note: "备注：{note}",
       confirm: "在此确认：{url}",
+      greetingBooked: "您好 {shop}！我刚通过 BeautyBook.my 预订了时段",
+      time: "时间：{time}",
+      booking: "预约：{url}",
     },
   },
   userTools: {
@@ -381,4 +385,5 @@ export const zh: Dictionary = {
     accountLink: "您的账户页面",
     accountAfter: "查看和更改您的资料。如需删除账户，请联系我们，我们会删除您的账户以及笔记、收藏和记录。",
   },
+  growth: growthZh,
 };

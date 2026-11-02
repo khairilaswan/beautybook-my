@@ -3,6 +3,7 @@ import { Inter_Tight, Manrope, Plus_Jakarta_Sans, Space_Grotesk } from "next/fon
 import Link from "next/link";
 import { Suspense } from "react";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { CompareTray } from "@/components/compare";
 import { ThemePreviewBar } from "@/components/theme-preview-bar";
 import { UserMenu } from "@/components/user-menu";
 import { getSiteTheme } from "@/lib/data/site-theme";
@@ -73,6 +74,9 @@ export default async function RootLayout({ children }: LayoutProps<"/[lang]">) {
                 </svg>
                 <span className="hidden sm:inline">{t.nav.explore}</span>
               </Link>
+              <Link href={href("/deals")} className="rounded-full px-2 py-1.5 hover:bg-brand-50 sm:px-3">
+                {t.growth.nav.deals}
+              </Link>
               <Link
                 href={href("/for-business")}
                 className="hidden rounded-full px-3 py-1.5 hover:bg-brand-50 sm:inline-block"
@@ -95,6 +99,9 @@ export default async function RootLayout({ children }: LayoutProps<"/[lang]">) {
             </div>
             <ul className="space-y-1">
               <li><Link href={href("/search")} className="hover:text-ink">{t.footer.explore}</Link></li>
+              <li><Link href={href("/search?view=map")} className="hover:text-ink">{t.growth.nav.map}</Link></li>
+              <li><Link href={href("/deals")} className="hover:text-ink">{t.growth.nav.deals}</Link></li>
+              <li><Link href={href("/guides")} className="hover:text-ink">{t.growth.nav.guides}</Link></li>
               <li><Link href={href("/for-business")} className="hover:text-ink">{t.footer.addOrClaim}</Link></li>
             </ul>
             <ul className="space-y-1">
@@ -103,6 +110,7 @@ export default async function RootLayout({ children }: LayoutProps<"/[lang]">) {
             </ul>
           </div>
         </footer>
+        <CompareTray />
         <ThemePreviewBar />
         </I18nProvider>
       </body>

@@ -3,7 +3,8 @@
 export const membersOnly = process.env.SITE_ACCESS !== "public";
 
 // Pages anyone can open in members-only mode.
-const OPEN_PATHS = ["/login", "/auth", "/privacy", "/pending"];
+// Invite links stay open so a friend can see who invited them before signing up.
+const OPEN_PATHS = ["/login", "/auth", "/privacy", "/pending", "/invite", "/api/payments/webhook", "/api/cron"];
 
 export function isOpenPath(pathname: string): boolean {
   return OPEN_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));

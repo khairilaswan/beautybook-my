@@ -1,3 +1,5 @@
+import { growthEn } from "@/lib/i18n/dictionaries/growth-en";
+
 // English UI strings. This file defines the shape: ms.ts and zh.ts must have
 // every key (TypeScript checks). Values with {name} placeholders go through
 // fmt() from @/lib/i18n. Keep namespaces per page or component.
@@ -163,6 +165,9 @@ export const en = {
       name: "Name: {name}",
       note: "Note: {note}",
       confirm: "Confirm here: {url}",
+      greetingBooked: "Hi {shop}! I just booked a slot via BeautyBook.my",
+      time: "Time: {time}",
+      booking: "Booking: {url}",
     },
   },
   userTools: {
@@ -394,6 +399,7 @@ export const en = {
     accountAfter:
       ". To delete your account, contact us and we'll remove it and your notes, favourites and history.",
   },
+  growth: growthEn,
 };
 
 export type Dictionary = typeof en;
