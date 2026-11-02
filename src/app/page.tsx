@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { JsonLd } from "@/components/json-ld";
 import { RecentSearches } from "@/components/recent-searches";
 import { getAreas, getCategories } from "@/lib/data/directory";
+import { siteJsonLd } from "@/lib/seo";
 
 export default async function HomePage() {
   const [categories, areas] = await Promise.all([getCategories(), getAreas()]);
@@ -8,6 +10,7 @@ export default async function HomePage() {
 
   return (
     <>
+      <JsonLd data={siteJsonLd()} />
       <section className="theme-hero bg-gradient-to-b from-brand-50 to-canvas">
         <div className="mx-auto max-w-6xl px-4 pb-12 pt-14 sm:pt-20">
           <h1 className="max-w-2xl text-4xl font-bold tracking-tight sm:text-5xl">

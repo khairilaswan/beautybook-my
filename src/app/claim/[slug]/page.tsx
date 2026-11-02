@@ -1,3 +1,4 @@
+import { listingPath } from "@/lib/paths";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -49,7 +50,7 @@ async function Claim({
   return (
     <>
       <p className="text-sm text-muted">
-        <Link href={`/shop/${listing.slug}`} className="underline">{listing.name}</Link>
+        <Link href={listingPath(listing.slug)} className="underline">{listing.name}</Link>
       </p>
       <h1 className="mt-1 text-2xl font-bold">Claim this business</h1>
       {existing && (

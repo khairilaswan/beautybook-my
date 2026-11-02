@@ -1,3 +1,4 @@
+import { listingPath } from "@/lib/paths";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -93,7 +94,7 @@ async function Dashboard({
           <h1 className="text-2xl font-bold">{l.name}</h1>
           <p className="text-sm text-muted">
             {l.status === "active" ? (
-              <Link href={`/shop/${l.slug}`} className="underline">View public page</Link>
+              <Link href={listingPath(l.slug)} className="underline">View public page</Link>
             ) : (
               <>Not public yet ({l.status})</>
             )}
@@ -138,7 +139,7 @@ async function Dashboard({
           selectedAttributes={(attrs.data ?? []).map((a) => a.attribute_id)}
         />
         <p className="mt-2 text-sm text-muted">
-          To change the shop name, address or phone number, <Link href={`/shop/${l.slug}/report`} className="underline">send us a correction</Link>.
+          To change the shop name, address or phone number, <Link href={`${listingPath(l.slug)}/report`} className="underline">send us a correction</Link>.
         </p>
       </section>
 

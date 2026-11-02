@@ -1,3 +1,4 @@
+import { listingPath } from "@/lib/paths";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ListingAdminTools } from "@/app/admin/listings/[id]/tools";
@@ -66,7 +67,7 @@ async function EditListingPage({ params, searchParams }: PageProps<"/admin/listi
         <div>
           <h1 className="text-2xl font-bold">{row.name}</h1>
           <p className="text-sm text-muted">
-            {row.status === "active" && <><Link href={`/shop/${row.slug}`} className="underline">View page</Link> · </>}
+            {row.status === "active" && <><Link href={listingPath(row.slug)} className="underline">View page</Link> · </>}
             Source: {row.source} · Added {formatDate(row.created_at)} · Last checked{" "}
             {row.last_verified_at ? formatDate(row.last_verified_at) : "never"} · Phone{" "}
             {row.phone_verified_at ? "verified by owner" : "not verified"} · {requests.count ?? 0} requests ·{" "}

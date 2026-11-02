@@ -1,3 +1,4 @@
+import { listingPath } from "@/lib/paths";
 import Link from "next/link";
 import { ShopUserToolsClient } from "@/components/shop-user-tools-client";
 import { getCurrentUser } from "@/lib/auth";
@@ -10,7 +11,7 @@ export async function ShopUserTools({ listingId, slug }: { listingId: string; sl
   if (!user) {
     return (
       <Link
-        href={`/login?next=${encodeURIComponent(`/shop/${slug}`)}`}
+        href={`/login?next=${encodeURIComponent(listingPath(slug))}`}
         className="rounded-full border border-line bg-white px-4 py-2 text-sm hover:border-brand-200"
       >
         ♡ Save

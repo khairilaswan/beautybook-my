@@ -47,7 +47,7 @@ CI runs all four on every pull request.
 | `supabase/migrations` | Schema, security rules, search functions, reference data (categories, Klang Valley areas, service templates) |
 | `supabase/tests/rls_checks.sql` | What each kind of user can and can't read or change |
 | `src/app/[area]`, `src/app/[area]/[category]` | Area and category pages (the SEO hubs) |
-| `src/app/shop/[slug]` | Shop profile and the WhatsApp booking-request form |
+| `src/app/salon/[slug]` | Shop profile (old `/shop/` URLs 301 here) and the WhatsApp booking-request form |
 | `src/app/claim`, `src/app/owner` | Claim flow and owner dashboard |
 | `src/app/account` | Favourites, notes, request and search history |
 | `src/app/admin` | Listings, import (CSV, XLSX, JSON) with undo, claims, reports, staff and roles, audit log, redirects |

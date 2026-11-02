@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { submitReport, type ReportState } from "@/app/shop/[slug]/report/actions";
+import { submitReport, type ReportState } from "@/app/salon/[slug]/report/actions";
 import { Turnstile } from "@/components/turnstile";
 
 const input = "mt-1 w-full rounded-xl border border-line bg-white px-3 py-2";

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { type Permission, requirePermission } from "@/lib/auth";
 import { tags } from "@/lib/data/directory";
+import { listingPath } from "@/lib/paths";
 import { SITE_THEME_TAG } from "@/lib/data/site-theme";
 import { type CleanListing, type ImportRow, MAX_IMPORT_ROWS, cleanRow, normalizeName } from "@/lib/import";
 import { normalizeMalaysianPhone } from "@/lib/phone";
@@ -115,7 +116,7 @@ export async function saveListing(_prev: ActionState, form: FormData): Promise<A
     const { error } = await supabase.from("listings").update(values).eq("id", existing.id);
     if (error) return { error: error.code === "23505" ? "Another listing already has that Google place ID." : "Could not save." };
     if (existing.slug !== slug) {
-      await supabase.from("redirects").upsert({ from_path: `/shop/${existing.slug}`, to_path: `/shop/${slug}` });
+      await supabase.from("redirects").upsert({ from_path: listingPath(existing.slug), to_path: listingPath(slug) });
     }
   } else {
     const { data, error } = await supabase
@@ -180,7 +181,7 @@ export async function mergeListings(keepId: string, duplicateSlug: string): Prom
     }
   }
   await admin.from("listings").update({ status: "archived" }).eq("id", dup.id);
-  await admin.from("redirects").upsert({ from_path: `/shop/${dup.slug}`, to_path: `/shop/${keep.slug}` });
+  await admin.from("redirects").upsert({ from_path: listingPath(dup.slug), to_path: listingPath(keep.slug) });
   refreshListing(keep.slug);
   refreshListing(dup.slug);
   return { message: `Merged ${dup.slug} into this listing.` };
@@ -594,10 +595,12 @@ export async function addCategory(_prev: ActionState, form: FormData): Promise<A
 
 export async function addRedirect(_prev: ActionState, form: FormData): Promise<ActionState> {
   const { supabase } = await staffClient("seo.edit");
-  const from = String(form.get("from") ?? "").trim();
-  const to = String(form.get("to") ?? "").trim();
-  if (!/^\/shop\/[a-z0-9-]+$/.test(from) || !to.startsWith("/")) {
-    return { error: "The old path must look like /shop/old-name and the new one must start with /" };
+  // Listing pages moved from /shop/ to /salon/; accept either spelling.
+  const salon = (path: string) => path.replace(/^\/shop\//, "/salon/");
+  const from = salon(String(form.get("from") ?? "").trim());
+  const to = salon(String(form.get("to") ?? "").trim());
+  if (!/^\/salon\/[a-z0-9-]+$/.test(from) || !to.startsWith("/")) {
+    return { error: "The old path must look like /salon/old-name and the new one must start with /" };
   }
   const { error } = await supabase.from("redirects").upsert({ from_path: from, to_path: to });
   updateTag(tags.listings);

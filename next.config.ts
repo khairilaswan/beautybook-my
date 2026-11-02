@@ -27,6 +27,11 @@ const nextConfig: NextConfig = {
         ]
       : [],
   },
+  // Listing pages moved from /shop/<slug> to /salon/<slug> on 2026-11-02.
+  // 301 (not Next's default 308) so every crawler reads it as a permanent move.
+  async redirects() {
+    return [{ source: "/shop/:path*", destination: "/salon/:path*", statusCode: 301 }];
+  },
   async headers() {
     return [
       {
