@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { DICTIONARIES } from "@/lib/i18n/dictionaries";
 import { DEFAULT_LOCALE, localePath, splitLocale } from "@/lib/i18n/config";
+import { claimReferral } from "@/lib/referrals";
 import { safeNext } from "@/lib/safe-next";
 import { createClient } from "@/lib/supabase/server";
 
@@ -11,8 +12,11 @@ export async function GET(request: NextRequest) {
   const next = safeNext(url.searchParams.get("next"));
   if (code) {
     const supabase = await createClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) return NextResponse.redirect(new URL(next, url.origin));
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+    if (!error) {
+      await claimReferral(data.user.id, data.user.created_at);
+      return NextResponse.redirect(new URL(next, url.origin));
+    }
   }
   // The sign-in started on a page in this language.
   const locale = splitLocale(next).locale ?? DEFAULT_LOCALE;

@@ -13,6 +13,7 @@ import {
   nearbyAreas,
   searchListings,
 } from "@/lib/data/directory";
+import { getFeatureSettings } from "@/lib/data/features";
 import { hubFaqs, hubSummary } from "@/lib/hub";
 import { fmt } from "@/lib/i18n/config";
 import { areaName, categoryName } from "@/lib/i18n/names";
@@ -32,9 +33,10 @@ export async function HubPage({ areaSlug, categorySlug }: { areaSlug: string; ca
   const category = categorySlug ? categories.find((c) => c.slug === categorySlug) : null;
   if (!area || (categorySlug && !category)) notFound();
 
-  const [stats, { items, total }] = await Promise.all([
+  const [stats, { items, total }, features] = await Promise.all([
     getHubStats(area.slug, category?.slug ?? null),
     searchListings({ area: area.slug, category: category?.slug }),
+    getFeatureSettings(),
   ]);
 
   const path = areaPath(areas, area);
@@ -89,7 +91,7 @@ export async function HubPage({ areaSlug, categorySlug }: { areaSlug: string; ca
 
       <div className="mt-8">
         {items.length > 0 ? (
-          <ListingGrid listings={items} categories={categories} />
+          <ListingGrid listings={items} categories={categories} showRatings={features.reviewsEnabled} />
         ) : (
           <p className="rounded-2xl border border-dashed border-line bg-white p-10 text-center text-muted">
             {t.hub.empty} <Link href={href("/for-business")} className="underline">{t.hub.addIt}</Link>.

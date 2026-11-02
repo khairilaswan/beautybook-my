@@ -310,5 +310,169 @@ begin
 end $$;
 reset role;
 
+-- Growth features (2026-11-02) ----------------------------------------------
+-- Fixtures as the database owner.
+insert into public.loyalty_programs (listing_id, enabled, stamps_required, reward)
+values ('00000000-0000-4000-8000-000000000001', true, 2, 'Free cut');
+insert into public.booking_requests (id, short_code, listing_id, user_id, service_name, customer_name, status, preferred_at)
+values
+  ('20000000-0000-4000-8000-000000000001', 'DONE001', '00000000-0000-4000-8000-000000000001',
+   '10000000-0000-4000-8000-000000000003', 'Fade', 'Aina', 'confirmed', now() - interval '2 days'),
+  ('20000000-0000-4000-8000-000000000002', 'DONE002', '00000000-0000-4000-8000-000000000001',
+   '10000000-0000-4000-8000-000000000003', 'Fade', 'Aina', 'confirmed', now() - interval '1 day'),
+  ('20000000-0000-4000-8000-000000000003', 'LATER01', '00000000-0000-4000-8000-000000000001',
+   '10000000-0000-4000-8000-000000000003', 'Fade', 'Aina', 'confirmed', now() + interval '2 days');
+insert into public.referrals (referred_id, referrer_id)
+values ('10000000-0000-4000-8000-000000000003', '10000000-0000-4000-8000-000000000004');
+insert into public.listing_service_areas (listing_id, area_id)
+select '00000000-0000-4000-8000-000000000003', id from public.areas where slug = 'kuala-lumpur';
+
+-- Anonymous visitors
+set local role anon;
+select set_config('request.jwt.claim.sub', '', true);
+do $$ begin
+  if (select count(*) from public.search_listings(p_lat => 3.13, p_lng => 101.67, p_radius_km => 50)) < 1 then
+    raise exception 'search_listings near me found nothing';
+  end if;
+  if exists (select 1 from public.search_listings(p_lat => 3.13, p_lng => 101.67, p_radius_km => 50) where distance_km is null and lat is not null) then
+    raise exception 'search_listings did not return distances';
+  end if;
+  if not exists (select 1 from public.search_listings(p_area => 'kuala-lumpur') where slug = 'demo-nails-subang') then
+    raise exception 'a mobile vendor did not show in an area it serves';
+  end if;
+  if (select count(*) from public.search_listings(p_slugs => array['demo-salon-ss2', 'demo-nails-subang'])) <> 2 then
+    raise exception 'search_listings by slugs failed';
+  end if;
+end $$;
+do $$ begin
+  perform 1 from public.quote_requests;
+  raise exception 'anon can read quote requests';
+exception when insufficient_privilege then null;
+end $$;
+do $$ begin
+  perform 1 from public.listing_stats;
+  raise exception 'anon can read shop analytics';
+exception when insufficient_privilege then null;
+end $$;
+do $$ begin
+  perform 1 from public.payments;
+  raise exception 'anon can read payments';
+exception when insufficient_privilege then null;
+end $$;
+do $$ begin
+  perform public.book_instant('00000000-0000-4000-8000-000000000001', now(), 30, null, 'x', null, null, null, null, 'x', null, null, null, 'XXXXXX');
+  raise exception 'anon can book instant slots directly';
+exception when insufficient_privilege then null;
+end $$;
+do $$ begin
+  perform public.track_listing_event('00000000-0000-4000-8000-000000000001', 'view');
+  raise exception 'anon can write analytics directly';
+exception when insufficient_privilege then null;
+end $$;
+
+-- Shop owner: content, completing visits
+reset role;
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '10000000-0000-4000-8000-000000000002', true);
+do $$ begin
+  insert into public.shop_staff (listing_id, name) values ('00000000-0000-4000-8000-000000000001', 'Ahmad');
+  insert into public.promotions (listing_id, title, ends_on)
+  values ('00000000-0000-4000-8000-000000000001', 'Raya fade', current_date + 7);
+  insert into public.booking_settings (listing_id, instant_enabled) values ('00000000-0000-4000-8000-000000000001', true);
+  update public.booking_requests set status = 'completed'
+  where id in ('20000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000002');
+end $$;
+do $$ begin
+  insert into public.shop_staff (listing_id, name) values ('00000000-0000-4000-8000-000000000002', 'Intruder');
+  raise exception 'owner added staff to someone else''s shop';
+exception when insufficient_privilege then null;
+end $$;
+
+reset role;
+do $$ begin
+  if (select count(*) from public.loyalty_stamps where user_id = '10000000-0000-4000-8000-000000000003') <> 2 then
+    raise exception 'completed visits did not add stamps';
+  end if;
+  if (select coalesce(sum(points), 0) from public.reward_points where user_id = '10000000-0000-4000-8000-000000000004') <> 100 then
+    raise exception 'the referrer was not rewarded exactly once';
+  end if;
+end $$;
+
+-- Customer: reviews are off until the owner turns them on
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '10000000-0000-4000-8000-000000000003', true);
+do $$ begin
+  insert into public.reviews (listing_id, booking_request_id, user_id, author_name, rating)
+  values ('00000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000001',
+          '10000000-0000-4000-8000-000000000003', 'Aina', 5);
+  raise exception 'a review was accepted while reviews are off';
+exception when insufficient_privilege then null;
+end $$;
+reset role;
+update public.site_settings set reviews_enabled = true;
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '10000000-0000-4000-8000-000000000003', true);
+do $$ begin
+  insert into public.reviews (listing_id, booking_request_id, user_id, author_name, rating)
+  values ('00000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000001',
+          '10000000-0000-4000-8000-000000000003', 'Aina', 5);
+  if (select loyalty_balance('00000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000003')) <> 2 then
+    raise exception 'customer cannot see their stamp balance';
+  end if;
+end $$;
+do $$ begin
+  insert into public.reviews (listing_id, booking_request_id, user_id, author_name, rating)
+  values ('00000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000003',
+          '10000000-0000-4000-8000-000000000003', 'Aina', 5);
+  raise exception 'a customer reviewed a visit that has not happened';
+exception when insufficient_privilege then null;
+end $$;
+
+-- Shop owner: reply yes, change the stars no; give a reward once
+reset role;
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '10000000-0000-4000-8000-000000000002', true);
+do $$ begin
+  update public.reviews set owner_reply = 'Thanks!' where booking_request_id = '20000000-0000-4000-8000-000000000001';
+  if not exists (select 1 from public.reviews where owner_reply = 'Thanks!') then
+    raise exception 'owner could not reply to a review';
+  end if;
+end $$;
+do $$ begin
+  update public.reviews set rating = 1 where booking_request_id = '20000000-0000-4000-8000-000000000001';
+  raise exception 'owner changed a customer''s rating';
+exception when insufficient_privilege then null;
+end $$;
+do $$ begin
+  insert into public.loyalty_redemptions (listing_id, user_id, stamps_used, reward, redeemed_by)
+  values ('00000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000003', 2, 'Free cut',
+          '10000000-0000-4000-8000-000000000002');
+end $$;
+do $$ begin
+  insert into public.loyalty_redemptions (listing_id, user_id, stamps_used, reward, redeemed_by)
+  values ('00000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000003', 2, 'Free cut',
+          '10000000-0000-4000-8000-000000000002');
+  raise exception 'a reward was given twice for the same stamps';
+exception when insufficient_privilege then null;
+end $$;
+
+-- Instant booking: the last chair can only be taken once
+reset role;
+do $$
+declare
+  t timestamptz := date_trunc('hour', now()) + interval '3 days';
+begin
+  perform public.book_instant('00000000-0000-4000-8000-000000000001', t, 30, null, 'Fade', null, null, null, null,
+    'A', null, null, null, 'INST001');
+  begin
+    perform public.book_instant('00000000-0000-4000-8000-000000000001', t + interval '15 minutes', 30, null, 'Fade',
+      null, null, null, null, 'B', null, null, null, 'INST002');
+    raise exception 'an overlapping slot was booked twice';
+  exception when raise_exception then
+    if sqlerrm <> 'slot_full' then raise; end if;
+  end;
+end $$;
+
+reset role;
 select 'all RLS checks passed' as result;
 rollback;

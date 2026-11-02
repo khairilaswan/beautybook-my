@@ -7,7 +7,13 @@ import { LOCALES, LOCALE_NAMES } from "@/lib/i18n/config";
 
 const input = "mt-1 w-full rounded-xl border border-line bg-white px-3 py-2";
 
-export function ProfileForm(props: { displayName: string; phone: string; preferredLang: string }) {
+export function ProfileForm(props: {
+  displayName: string;
+  phone: string;
+  preferredLang: string;
+  remindersOptIn: boolean;
+  remindersAvailable: boolean;
+}) {
   const [state, action, pending] = useActionState<{ message?: string }, FormData>(updateProfile, {});
   const { t } = useI18n();
   return (
@@ -28,6 +34,15 @@ export function ProfileForm(props: { displayName: string; phone: string; preferr
           ))}
         </select>
       </label>
+      {props.remindersAvailable && (
+        <label className="flex items-start gap-2 text-sm">
+          <input type="hidden" name="remindersShown" value="1" />
+          <input type="checkbox" name="remindersOptIn" defaultChecked={props.remindersOptIn} className="mt-1" />
+          <span>
+            {t.growth.account.reminders}
+          </span>
+        </label>
+      )}
       <div className="flex items-center gap-3">
         <button disabled={pending} className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-white disabled:opacity-60">
           {t.common.save}

@@ -19,6 +19,10 @@ export const tags = {
 };
 
 export const PAGE_SIZE = 24;
+
+export function todayInMalaysia(): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kuala_Lumpur" }).format(new Date());
+}
 // Hub pages with fewer shops than this get noindex and stay out of the sitemap.
 export const MIN_INDEXABLE_LISTINGS = 3;
 
@@ -28,7 +32,7 @@ export async function getCategories(): Promise<Category[]> {
   cacheTag(tags.taxonomy);
   const { data, error } = await createPublicClient()
     .from("categories")
-    .select("id, slug, slug_ms, name_en, name_ms, name_zh, schema_type, sort_order")
+    .select("id, slug, slug_ms, name_en, name_ms, name_zh, schema_type, sort_order, rebook_days")
     .order("sort_order");
   if (error) throw error;
   return data;
@@ -129,6 +133,7 @@ export async function searchListings(params: SearchParams): Promise<{
   cacheLife("minutes");
   cacheTag(tags.listings);
   const page = Math.max(1, params.page ?? 1);
+  const pageSize = params.pageSize ?? PAGE_SIZE;
   const { data, error } = await createPublicClient().rpc("search_listings", {
     p_query: params.q?.trim() || null,
     p_category: params.category || null,
@@ -136,11 +141,24 @@ export async function searchListings(params: SearchParams): Promise<{
     p_attributes: params.attributes?.length ? params.attributes : null,
     p_gender: params.gender ?? null,
     p_open_now: params.openNow ?? false,
-    p_limit: PAGE_SIZE,
-    p_offset: (page - 1) * PAGE_SIZE,
+    p_open_late: params.openLate ?? false,
+    p_max_price: params.maxPrice ?? null,
+    p_lat: params.near?.lat ?? null,
+    p_lng: params.near?.lng ?? null,
+    p_radius_km: params.near ? (params.radiusKm ?? 15) : null,
+    p_sort: params.sort ?? null,
+    p_slugs: params.slugs?.length ? params.slugs : null,
+    p_limit: pageSize,
+    p_offset: (page - 1) * pageSize,
   });
   if (error) throw error;
-  const items = (data ?? []) as ListingCard[];
+  const items = ((data ?? []) as ListingCard[]).map((l) => ({
+    ...l,
+    min_price: l.min_price === null ? null : Number(l.min_price),
+    max_price: l.max_price === null ? null : Number(l.max_price),
+    rating_avg: l.rating_avg === null ? null : Number(l.rating_avg),
+    rating_count: Number(l.rating_count),
+  }));
   return { items, total: items.length > 0 ? Number(items[0].total_count) : 0 };
 }
 
@@ -159,7 +177,14 @@ export async function getListing(slug: string): Promise<ListingDetail | null> {
        services ( id, name, price_from, price_to, duration_min, sort_order ),
        opening_hours ( weekday, opens, closes ),
        closures ( date_from, date_to, note ),
-       photos ( id, storage_path, alt, sort_order )`,
+       photos ( id, storage_path, alt, sort_order, kind, caption, category_id ),
+       shop_staff ( id, name, title, bio, photo_path, languages, is_active, sort_order ),
+       promotions ( id, title, details, price_label, occasion, starts_on, ends_on ),
+       packages ( id, kind, name, description, includes, price_from, price_to, sort_order ),
+       listing_service_areas ( area_id ),
+       booking_settings ( instant_enabled, slot_minutes, capacity, min_notice_hours, max_days_ahead ),
+       voucher_settings ( enabled, amounts, valid_months, terms ),
+       loyalty_programs ( enabled, stamps_required, reward )`,
     )
     .eq("slug", slug)
     .maybeSingle();
@@ -168,7 +193,9 @@ export async function getListing(slug: string): Promise<ListingDetail | null> {
 
   type Row = Omit<
     ListingDetail,
-    "is_claimed" | "area" | "area_path" | "categories" | "attributes" | "services" | "services_are_template" | "hours" | "closures" | "photos"
+    | "is_claimed" | "area" | "area_path" | "categories" | "attributes" | "services" | "services_are_template"
+    | "hours" | "closures" | "photos" | "staff" | "promotions" | "packages" | "service_areas" | "booking"
+    | "vouchers" | "loyalty"
   > & {
     area_id: number | null;
     listing_categories: { is_primary: boolean; categories: Category }[];
@@ -177,6 +204,14 @@ export async function getListing(slug: string): Promise<ListingDetail | null> {
     opening_hours: ListingDetail["hours"];
     closures: ListingDetail["closures"];
     photos: (ListingDetail["photos"][number] & { sort_order: number })[];
+    shop_staff: (ListingDetail["staff"][number] & { is_active: boolean; sort_order: number })[];
+    promotions: ListingDetail["promotions"];
+    packages: (ListingDetail["packages"][number] & { sort_order: number })[];
+    listing_service_areas: { area_id: number }[];
+    // One-to-one tables come back as an object (or null), not a list.
+    booking_settings: ListingDetail["booking"];
+    voucher_settings: ListingDetail["vouchers"];
+    loyalty_programs: ListingDetail["loyalty"];
   };
   const row = data as unknown as Row;
 
@@ -240,6 +275,23 @@ export async function getListing(slug: string): Promise<ListingDetail | null> {
     hours: row.opening_hours,
     closures: row.closures,
     photos: [...row.photos].sort((a, b) => a.sort_order - b.sort_order),
+    staff: row.shop_staff.filter((s) => s.is_active).sort((a, b) => a.sort_order - b.sort_order || a.id - b.id),
+    promotions: row.promotions
+      .filter((p) => p.ends_on >= todayInMalaysia())
+      .sort((a, b) => a.ends_on.localeCompare(b.ends_on)),
+    packages: [...row.packages]
+      .sort((a, b) => a.sort_order - b.sort_order || a.id - b.id)
+      .map((p) => ({
+        ...p,
+        price_from: p.price_from === null ? null : Number(p.price_from),
+        price_to: p.price_to === null ? null : Number(p.price_to),
+      })),
+    service_areas: row.listing_service_areas
+      .map((sa) => areas.find((a) => a.id === sa.area_id))
+      .filter((a): a is Area => !!a),
+    booking: row.booking_settings,
+    vouchers: row.voucher_settings?.enabled ? row.voucher_settings : null,
+    loyalty: row.loyalty_programs?.enabled ? row.loyalty_programs : null,
   };
 }
 
