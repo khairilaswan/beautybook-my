@@ -1,3 +1,4 @@
+import { listingPath } from "@/lib/paths";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -19,12 +20,12 @@ import type { ListingDetail } from "@/lib/types";
 async function loadListing(slug: string): Promise<ListingDetail> {
   const listing = await getListing(slug);
   if (listing) return listing;
-  const to = await getRedirect(`/shop/${slug}`);
+  const to = await getRedirect(listingPath(slug));
   if (to) permanentRedirect(to);
   notFound();
 }
 
-export async function generateMetadata({ params }: PageProps<"/shop/[slug]">): Promise<Metadata> {
+export async function generateMetadata({ params }: PageProps<"/salon/[slug]">): Promise<Metadata> {
   const { slug } = await params;
   const listing = await getListing(slug);
   if (!listing) return { title: "Shop not found", robots: { index: false } };
@@ -38,18 +39,18 @@ export async function generateMetadata({ params }: PageProps<"/shop/[slug]">): P
   return {
     title,
     description,
-    alternates: { canonical: `/shop/${listing.slug}` },
+    alternates: { canonical: listingPath(listing.slug) },
     openGraph: {
       title,
       description,
-      url: `/shop/${listing.slug}`,
+      url: listingPath(listing.slug),
       images: cover ? [{ url: photoUrl(cover.storage_path) }] : undefined,
     },
     robots: listing.status === "active" ? undefined : { index: false },
   };
 }
 
-export default function ShopPage({ params }: PageProps<"/shop/[slug]">) {
+export default function ShopPage({ params }: PageProps<"/salon/[slug]">) {
   return (
     <Suspense fallback={<div className="mx-auto h-96 max-w-6xl animate-pulse px-4 py-8" />}>
       <Shop params={params} />
@@ -57,7 +58,7 @@ export default function ShopPage({ params }: PageProps<"/shop/[slug]">) {
   );
 }
 
-async function Shop({ params }: { params: PageProps<"/shop/[slug]">["params"] }) {
+async function Shop({ params }: { params: PageProps<"/salon/[slug]">["params"] }) {
   const { slug } = await params;
   const [listing, { ownerThemes }] = await Promise.all([loadListing(slug), getSiteSettings()]);
   const shopTheme = ownerThemes ? await getShopTheme(listing.slug) : null;
@@ -66,7 +67,7 @@ async function Shop({ params }: { params: PageProps<"/shop/[slug]">["params"] })
     { name: "Home", path: "/" },
     ...listing.area_path.filter((a) => a.type !== "state").map((a) => ({ name: a.name, path: `/${a.slug}` })),
     ...(category && listing.area ? [{ name: category.name_en, path: `/${listing.area.slug}/${category.slug}` }] : []),
-    { name: listing.name, path: `/shop/${listing.slug}` },
+    { name: listing.name, path: listingPath(listing.slug) },
   ];
   const waNumber = listing.whatsapp ?? (listing.phone?.startsWith("601") ? listing.phone : null);
   const isOpenForRequests = listing.status === "active" && !!waNumber;
@@ -221,7 +222,7 @@ async function Shop({ params }: { params: PageProps<"/shop/[slug]">["params"] })
 
           <p className="text-sm text-muted">
             {listing.last_verified_at && <>Details last checked {formatDate(listing.last_verified_at)}. </>}
-            <Link href={`/shop/${listing.slug}/report`} className="underline">Report a problem</Link>
+            <Link href={`${listingPath(listing.slug)}/report`} className="underline">Report a problem</Link>
           </p>
         </div>
 

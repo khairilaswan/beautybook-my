@@ -1,3 +1,4 @@
+import { listingPath } from "@/lib/paths";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -79,7 +80,7 @@ async function Account() {
                     </p>
                   </div>
                   {listing && (
-                    <Link href={`/shop/${listing.slug}#book`} className="rounded-full border border-line px-3 py-1 text-sm hover:border-brand-200">
+                    <Link href={`${listingPath(listing.slug)}#book`} className="rounded-full border border-line px-3 py-1 text-sm hover:border-brand-200">
                       Book again
                     </Link>
                   )}
@@ -100,7 +101,7 @@ async function Account() {
               const listing = ref(f);
               return listing ? (
                 <li key={listing.slug}>
-                  <Link href={`/shop/${listing.slug}`} className="block rounded-xl border border-line bg-white p-3 hover:border-brand-200">
+                  <Link href={listingPath(listing.slug)} className="block rounded-xl border border-line bg-white p-3 hover:border-brand-200">
                     {listing.name}
                   </Link>
                 </li>
@@ -120,7 +121,7 @@ async function Account() {
               const listing = ref(n);
               return listing ? (
                 <li key={listing.slug} className="rounded-xl border border-line bg-white p-3">
-                  <Link href={`/shop/${listing.slug}`} className="font-medium hover:underline">{listing.name}</Link>
+                  <Link href={listingPath(listing.slug)} className="font-medium hover:underline">{listing.name}</Link>
                   <p className="mt-1 whitespace-pre-line text-sm">{n.body}</p>
                 </li>
               ) : null;

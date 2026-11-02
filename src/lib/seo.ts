@@ -1,3 +1,4 @@
+import { listingPath } from "@/lib/paths";
 import { siteUrl } from "@/lib/env";
 import { photoUrl } from "@/lib/format";
 import { SCHEMA_DAYS, hhmm } from "@/lib/hours";
@@ -56,9 +57,9 @@ export function listingJsonLd(listing: ListingDetail): JsonLd {
   return {
     "@context": "https://schema.org",
     "@type": primary?.schema_type ?? "BeautySalon",
-    "@id": absoluteUrl(`/shop/${listing.slug}#business`),
+    "@id": absoluteUrl(`${listingPath(listing.slug)}#business`),
     name: listing.name,
-    url: absoluteUrl(`/shop/${listing.slug}`),
+    url: absoluteUrl(listingPath(listing.slug)),
     description: listing.description ?? undefined,
     telephone: listing.phone ? `+${listing.phone}` : undefined,
     image: listing.photos.map((p) => photoUrl(p.storage_path)),
@@ -103,4 +104,31 @@ export function listingJsonLd(listing: ListingDetail): JsonLd {
 // Escapes "<" so a description containing "</script>" can't break out.
 export function jsonLdScript(data: JsonLd | JsonLd[]): { __html: string } {
   return { __html: JSON.stringify(data).replace(/</g, "\\u003c") };
+}
+
+// Home page: names the site for Google and lets it offer a search box.
+export function siteJsonLd(): JsonLd[] {
+  return [
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "@id": absoluteUrl("/#website"),
+      name: "BeautyBook",
+      url: absoluteUrl("/"),
+      inLanguage: "en-MY",
+      potentialAction: {
+        "@type": "SearchAction",
+        target: { "@type": "EntryPoint", urlTemplate: `${absoluteUrl("/search")}?q={search_term_string}` },
+        "query-input": "required name=search_term_string",
+      },
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "@id": absoluteUrl("/#organization"),
+      name: "BeautyBook",
+      url: absoluteUrl("/"),
+      areaServed: { "@type": "Country", name: "Malaysia" },
+    },
+  ];
 }

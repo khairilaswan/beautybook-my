@@ -1,3 +1,4 @@
+import { listingPath } from "@/lib/paths";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Breadcrumbs } from "@/components/breadcrumbs";
@@ -48,7 +49,7 @@ export async function HubPage({ areaSlug, categorySlug }: { areaSlug: string; ca
       <JsonLd
         data={[
           breadcrumbJsonLd(crumbs),
-          itemListJsonLd(title, items.map((l) => ({ name: l.name, path: `/shop/${l.slug}` }))),
+          itemListJsonLd(title, items.map((l) => ({ name: l.name, path: listingPath(l.slug) }))),
           faqJsonLd(faqs),
         ]}
       />

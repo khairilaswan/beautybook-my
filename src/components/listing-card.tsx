@@ -1,3 +1,4 @@
+import { listingPath } from "@/lib/paths";
 import Image from "next/image";
 import Link from "next/link";
 import { GENDER_LABELS, photoUrl, priceLevelLabel } from "@/lib/format";
@@ -7,7 +8,7 @@ export function ListingCard({ listing, categories }: { listing: Card; categories
   const category = categories.find((c) => c.slug === listing.primary_category);
   return (
     <Link
-      href={`/shop/${listing.slug}`}
+      href={listingPath(listing.slug)}
       className="group overflow-hidden rounded-2xl border border-line bg-white transition hover:-translate-y-0.5 hover:shadow-md"
     >
       <div className="relative aspect-[4/3] bg-brand-50">

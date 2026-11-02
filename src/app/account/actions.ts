@@ -1,5 +1,6 @@
 "use server";
 
+import { listingPath } from "@/lib/paths";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -14,7 +15,7 @@ async function signedIn(next: string) {
 }
 
 export async function toggleFavourite(listingId: string, slug: string, save: boolean) {
-  const user = await signedIn(`/shop/${slug}`);
+  const user = await signedIn(listingPath(slug));
   const supabase = await createClient();
   const { error } = save
     ? await supabase.from("favourites").upsert({ user_id: user.id, listing_id: listingId })
@@ -24,7 +25,7 @@ export async function toggleFavourite(listingId: string, slug: string, save: boo
 }
 
 export async function saveNote(listingId: string, slug: string, body: string) {
-  const user = await signedIn(`/shop/${slug}`);
+  const user = await signedIn(listingPath(slug));
   const supabase = await createClient();
   const text = body.trim().slice(0, 2000);
   const { error } = text

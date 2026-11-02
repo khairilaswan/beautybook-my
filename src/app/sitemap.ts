@@ -1,3 +1,4 @@
+import { listingPath } from "@/lib/paths";
 import type { MetadataRoute } from "next";
 import { MIN_INDEXABLE_LISTINGS, countInTree, getAreas, getCategories, getHubCounts, getListingSlugs } from "@/lib/data/directory";
 import { absoluteUrl } from "@/lib/seo";
@@ -27,7 +28,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: absoluteUrl("/for-business"), changeFrequency: "monthly", priority: 0.5 },
     ...hubs,
     ...listings.map((l) => ({
-      url: absoluteUrl(`/shop/${l.slug}`),
+      url: absoluteUrl(listingPath(l.slug)),
       lastModified: l.updated_at,
       changeFrequency: "weekly" as const,
       priority: 0.7,

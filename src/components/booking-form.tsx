@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useMemo, useState } from "react";
-import { createBookingRequest, type BookingState } from "@/app/shop/[slug]/actions";
+import { createBookingRequest, type BookingState } from "@/app/salon/[slug]/actions";
 import { Turnstile } from "@/components/turnstile";
 import { useIsClient } from "@/components/use-is-client";
 import { priceLabel } from "@/lib/format";
