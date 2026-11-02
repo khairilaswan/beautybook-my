@@ -35,7 +35,7 @@ async function AdminListings({ searchParams }: PageProps<"/[lang]/admin/listings
     getAreas(),
     queryListings(
       filters,
-      "id, slug, name, status, source, phone, last_verified_at, updated_at, areas ( name )",
+      "id, slug, name, status, source, phone, last_verified_at, updated_at, areas!listings_area_id_fkey ( name )",
       ADMIN_PAGE_SIZE,
       (page - 1) * ADMIN_PAGE_SIZE,
     ),
@@ -80,6 +80,11 @@ async function AdminListings({ searchParams }: PageProps<"/[lang]/admin/listings
         </label>
         <button className="rounded-xl bg-ink px-4 py-2 text-white">Filter</button>
       </form>
+      {result.error && (
+        <p className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          Could not load listings: {result.error.message}
+        </p>
+      )}
       <div className="mt-4 overflow-x-auto rounded-2xl border border-line bg-white">
         <table className="w-full text-sm">
           <thead className="bg-canvas text-left text-muted">

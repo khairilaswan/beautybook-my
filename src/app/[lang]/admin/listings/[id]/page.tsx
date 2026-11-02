@@ -31,7 +31,7 @@ async function EditListingPage({ params, searchParams }: PageProps<"/[lang]/admi
       .select(
         `id, name, slug, status, address, postcode, lat, lng, phone, whatsapp, website, instagram, facebook,
          description, price_level, gender, google_place_id, source, last_verified_at, phone_verified_at, created_at,
-         areas ( slug ), listing_categories ( is_primary, categories ( slug ) ), listing_attributes ( attribute_id )`,
+         areas!listings_area_id_fkey ( slug ), listing_categories ( is_primary, categories ( slug ) ), listing_attributes ( attribute_id )`,
       )
       .eq("id", id)
       .maybeSingle(),
