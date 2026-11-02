@@ -22,6 +22,7 @@ export function parseSearchParams(raw: RawParams): SearchParams & { view: "list"
     q: one("q")?.slice(0, 100),
     category: one("category"),
     area: one("area"),
+    mall: one("mall"),
     attributes: many("attr").slice(0, 10),
     gender: gender === "men" || gender === "women" ? gender : undefined,
     openNow: one("open") === "1",
@@ -40,6 +41,7 @@ export function searchQueryString(params: ReturnType<typeof parseSearchParams>, 
   if (params.q) qs.set("q", params.q);
   if (params.category) qs.set("category", params.category);
   if (params.area) qs.set("area", params.area);
+  if (params.mall) qs.set("mall", params.mall);
   params.attributes?.forEach((a) => qs.append("attr", a));
   if (params.gender) qs.set("for", params.gender);
   if (params.openNow) qs.set("open", "1");

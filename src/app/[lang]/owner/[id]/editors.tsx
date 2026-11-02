@@ -13,7 +13,7 @@ import {
 import { photoUrl } from "@/lib/format";
 import { WEEKDAYS, hhmm } from "@/lib/hours";
 import { uploadFile } from "@/lib/supabase/browser";
-import type { Attribute } from "@/lib/types";
+import type { Attribute, Mall } from "@/lib/types";
 
 const input = "w-full rounded-xl border border-line bg-white px-3 py-2";
 const saveButton = "rounded-full bg-ink px-4 py-2 text-sm font-medium text-white disabled:opacity-60";
@@ -34,12 +34,14 @@ type DetailsProps = {
     facebook: string | null;
     price_level: number | null;
     gender: string | null;
+    mall_id: number | null;
   };
+  malls: Mall[];
   attributes: Attribute[];
   selectedAttributes: number[];
 };
 
-export function DetailsForm({ listing, attributes, selectedAttributes }: DetailsProps) {
+export function DetailsForm({ listing, malls, attributes, selectedAttributes }: DetailsProps) {
   const [state, action, pending] = useActionState(updateListingDetails, {});
   return (
     <form action={action} className="mt-3 space-y-4 rounded-2xl border border-line bg-white p-5">
@@ -57,7 +59,16 @@ export function DetailsForm({ listing, attributes, selectedAttributes }: Details
           </label>
         ))}
       </div>
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-3">
+        <label className="block text-sm">
+          <span className="font-medium">Shopping mall</span>
+          <select name="mall" defaultValue={malls.find((m) => m.id === listing.mall_id)?.slug ?? ""} className={`mt-1 ${input}`}>
+            <option value="">Not in a mall</option>
+            {[...malls].sort((a, b) => a.name.localeCompare(b.name)).map((m) => (
+              <option key={m.slug} value={m.slug}>{m.name}</option>
+            ))}
+          </select>
+        </label>
         <label className="block text-sm">
           <span className="font-medium">Price level</span>
           <select name="priceLevel" defaultValue={listing.price_level ?? ""} className={`mt-1 ${input}`}>

@@ -21,7 +21,7 @@ import { ShopThemePicker } from "@/app/[lang]/owner/[id]/shop-theme";
 import { Stars } from "@/components/shop/reviews-section";
 import { RequestStatusButtons } from "@/components/request-status-buttons";
 import { requireUser } from "@/lib/auth";
-import { getAreas, getAttributes, getCategories } from "@/lib/data/directory";
+import { getAreas, getAttributes, getCategories, getMalls } from "@/lib/data/directory";
 import { getFeatureSettings } from "@/lib/data/features";
 import { getSiteSettings } from "@/lib/data/site-theme";
 import { daysAgoIso, formatDate } from "@/lib/format";
@@ -83,7 +83,7 @@ async function Dashboard({
 
   const { data: l } = await supabase
     .from("listings")
-    .select("id, slug, name, status, phone, description, website, instagram, facebook, price_level, gender, area_id")
+    .select("id, slug, name, status, phone, description, website, instagram, facebook, price_level, gender, area_id, mall_id")
     .eq("id", id)
     .single();
   if (!l) notFound();
@@ -277,11 +277,12 @@ type ListingRow = {
   facebook: string | null;
   price_level: number | null;
   gender: string | null;
+  mall_id: number | null;
 };
 
 async function Profile({ listing: l }: { listing: ListingRow }) {
   const supabase = await createClient();
-  const [services, hours, closures, photos, attrs, serviceAreas, allAttributes, areas, settings] = await Promise.all([
+  const [services, hours, closures, photos, attrs, serviceAreas, allAttributes, areas, settings, malls] = await Promise.all([
     supabase.from("services").select("name, price_from, price_to, duration_min").eq("listing_id", l.id).order("sort_order"),
     supabase.from("opening_hours").select("weekday, opens, closes").eq("listing_id", l.id),
     supabase.from("closures").select("date_from, date_to, note").eq("listing_id", l.id).order("date_from"),
@@ -291,6 +292,7 @@ async function Profile({ listing: l }: { listing: ListingRow }) {
     getAttributes(),
     getAreas(),
     getSiteSettings(),
+    getMalls(),
   ]);
   const homeService = allAttributes.find((a) => a.slug === "home-service");
   const isMobile = !!homeService && (attrs.data ?? []).some((a) => a.attribute_id === homeService.id);
@@ -306,6 +308,7 @@ async function Profile({ listing: l }: { listing: ListingRow }) {
         <h2 className="text-lg font-semibold">Details</h2>
         <DetailsForm
           listing={l}
+          malls={malls}
           attributes={allAttributes}
           selectedAttributes={(attrs.data ?? []).map((a) => a.attribute_id)}
         />

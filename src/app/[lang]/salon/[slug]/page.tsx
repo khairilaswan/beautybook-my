@@ -25,7 +25,7 @@ import { weeklySchedule } from "@/lib/hours";
 import { alternatesFor, fmt } from "@/lib/i18n/config";
 import { areaName, attributeName, categoryName, serviceName } from "@/lib/i18n/names";
 import { getI18n } from "@/lib/i18n/server";
-import { hubPath, listingPath } from "@/lib/paths";
+import { hubPath, listingPath, mallPath } from "@/lib/paths";
 import { formatMalaysianPhone } from "@/lib/phone";
 import { breadcrumbJsonLd, listingJsonLd } from "@/lib/seo";
 import type { ListingDetail } from "@/lib/types";
@@ -130,6 +130,14 @@ async function Shop({ params }: { params: PageProps<"/[lang]/salon/[slug]">["par
             ]
               .filter(Boolean)
               .join(" · ")}
+            {listing.mall && (
+              <>
+                {" · "}
+                <Link href={href(mallPath(listing.mall.slug))} className="underline hover:text-ink">
+                  {fmt(t.growth.malls.inside, { mall: listing.mall.name })}
+                </Link>
+              </>
+            )}
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
             <OpenStatus hours={listing.hours} closures={listing.closures} />
@@ -301,6 +309,13 @@ async function Shop({ params }: { params: PageProps<"/[lang]/salon/[slug]">["par
 
           <section>
             <h2 className="text-xl font-semibold">{t.shop.location}</h2>
+            {listing.mall && (
+              <p className="mt-2 font-medium">
+                <Link href={href(mallPath(listing.mall.slug))} className="underline">
+                  {fmt(t.growth.malls.inside, { mall: listing.mall.name })}
+                </Link>
+              </p>
+            )}
             {listing.address && <p className="mt-2">{[listing.address, listing.postcode].filter(Boolean).join(" ")}</p>}
             {listing.lat !== null && listing.lng !== null && (
               <iframe

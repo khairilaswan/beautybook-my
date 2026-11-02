@@ -19,6 +19,8 @@ insert into public.listing_members (listing_id, user_id)
 values ('00000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000002');
 insert into public.listings (id, slug, name, status)
 values ('00000000-0000-4000-8000-000000000009', 'hidden-shop', 'Hidden shop', 'hidden');
+update public.listings set mall_id = (select id from public.malls where slug = 'bangsar-village')
+where slug = 'demo-barber-bangsar';
 insert into public.booking_requests (short_code, listing_id, user_id, service_name, customer_name)
 values ('ABC123', '00000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000003',
   'Haircut', 'Aina');
@@ -43,6 +45,19 @@ do $$ begin
   if (select count(*) from public.search_listings(p_query => 'barbr')) <> 1 then
     raise exception 'search_listings fuzzy name match failed';
   end if;
+  if (select count(*) from public.malls) < 20 then
+    raise exception 'anon cannot read the mall list';
+  end if;
+  if (select count(*) from public.search_listings(p_mall => 'bangsar-village')) <> 1
+    or (select mall_name from public.search_listings(p_mall => 'bangsar-village')) <> 'Bangsar Village' then
+    raise exception 'search_listings by mall failed';
+  end if;
+  if (select count(*) from public.search_listings(p_mall => 'suria-klcc')) <> 0 then
+    raise exception 'search_listings returned shops from another mall';
+  end if;
+  if (select listing_count from public.mall_counts() where mall_slug = 'bangsar-village') <> 1 then
+    raise exception 'mall_counts failed';
+  end if;
   -- 2026-10-30 is a Friday. The demo salon breaks 13:00-14:30 for prayers.
   if public.is_open_at('00000000-0000-4000-8000-000000000002', '2026-10-30 13:30+08') then
     raise exception 'is_open_at ignored the Friday break';
@@ -60,6 +75,12 @@ do $$ begin
   if exists (select 1 from public.listings where name = 'Hacked') then
     raise exception 'anon updated a listing';
   end if;
+exception when insufficient_privilege then null;
+end $$;
+
+do $$ begin
+  insert into public.malls (slug, name) values ('fake-mall', 'Fake Mall');
+  raise exception 'anon added a mall';
 exception when insufficient_privilege then null;
 end $$;
 
@@ -89,6 +110,21 @@ do $$ begin
   if exists (select 1 from public.listings where description = 'Other edit') then
     raise exception 'owner edited someone else''s listing';
   end if;
+end $$;
+
+do $$ begin
+  update public.listings set mall_id = (select id from public.malls where slug = 'mid-valley-megamall')
+  where slug = 'demo-barber-bangsar';
+  if (select m.slug from public.listings l join public.malls m on m.id = l.mall_id
+      where l.slug = 'demo-barber-bangsar') <> 'mid-valley-megamall' then
+    raise exception 'owner could not set their shop''s mall';
+  end if;
+end $$;
+
+do $$ begin
+  insert into public.malls (slug, name) values ('owner-mall', 'Owner Mall');
+  raise exception 'shop owner added a mall';
+exception when insufficient_privilege then null;
 end $$;
 
 do $$ begin
@@ -156,6 +192,12 @@ do $$ begin
   if (select count(*) from public.audit_log) <> 0 then
     raise exception 'editor can read the audit log';
   end if;
+end $$;
+
+do $$ begin
+  insert into public.malls (slug, name) values ('editor-mall', 'Editor Mall');
+  update public.malls set name = 'Editor Mall 2' where slug = 'editor-mall';
+  delete from public.malls where slug = 'editor-mall';
 end $$;
 
 do $$ begin

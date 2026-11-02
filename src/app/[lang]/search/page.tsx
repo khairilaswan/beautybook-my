@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { ListingGrid } from "@/components/listing-card";
 import { MapView } from "@/components/map-view";
 import { SearchFilters } from "@/components/search-filters";
-import { PAGE_SIZE, getAreas, getAttributes, getCategories, searchListings } from "@/lib/data/directory";
+import { PAGE_SIZE, getAreas, getAttributes, getCategories, getMalls, searchListings } from "@/lib/data/directory";
 import { getFeatureSettings } from "@/lib/data/features";
 import { alternatesFor, fmt } from "@/lib/i18n/config";
 import { areaName, categoryName } from "@/lib/i18n/names";
@@ -25,10 +25,11 @@ export async function generateMetadata(): Promise<Metadata> {
 const MAP_LIMIT = 200;
 
 export default async function SearchPage({ searchParams }: PageProps<"/[lang]/search">) {
-  const [categories, areas, attributes, { t }] = await Promise.all([
+  const [categories, areas, attributes, malls, { t }] = await Promise.all([
     getCategories(),
     getAreas(),
     getAttributes(),
+    getMalls(),
     getI18n(),
   ]);
   return (
@@ -36,7 +37,7 @@ export default async function SearchPage({ searchParams }: PageProps<"/[lang]/se
       <aside>
         <h1 className="mb-4 text-2xl font-bold">{t.search.title}</h1>
         <Suspense>
-          <SearchFilters categories={categories} areas={areas} attributes={attributes} />
+          <SearchFilters categories={categories} areas={areas} attributes={attributes} malls={malls} />
         </Suspense>
       </aside>
       <section aria-live="polite">
@@ -51,14 +52,16 @@ export default async function SearchPage({ searchParams }: PageProps<"/[lang]/se
 async function Results({ searchParams }: { searchParams: Promise<RawParams> }) {
   const params = parseSearchParams(await searchParams);
   const isMap = params.view === "map";
-  const [categories, areas, { items, total }, features, { locale, t, href: localHref }] = await Promise.all([
+  const [categories, areas, malls, { items, total }, features, { locale, t, href: localHref }] = await Promise.all([
     getCategories(),
     getAreas(),
+    getMalls(),
     searchListings(isMap ? { ...params, page: 1, pageSize: MAP_LIMIT } : params),
     getFeatureSettings(),
     getI18n(),
   ]);
   const area = areas.find((a) => a.slug === params.area);
+  const mall = malls.find((m) => m.slug === params.mall);
   const category = categories.find((c) => c.slug === params.category);
   const page = params.page ?? 1;
   const pages = isMap ? 1 : Math.ceil(total / PAGE_SIZE);
@@ -73,7 +76,7 @@ async function Results({ searchParams }: { searchParams: Promise<RawParams> }) {
           {category ? fmt(t.search.forCategory, { category: categoryName(category, locale).toLowerCase() }) : ""}
           {params.near
             ? fmt(g.withinKm, { km: params.radiusKm ?? 10 })
-            : fmt(t.search.inArea, { area: area ? areaName(area, locale) : t.common.klangValley })}
+            : fmt(t.search.inArea, { area: mall ? mall.name : area ? areaName(area, locale) : t.common.klangValley })}
         </p>
         <div className="flex rounded-full border border-line bg-white p-0.5 text-sm" role="group" aria-label={g.view}>
           <Link

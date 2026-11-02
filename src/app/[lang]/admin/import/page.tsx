@@ -1,6 +1,6 @@
 import { ImportTool, UndoButton } from "@/app/[lang]/admin/import/import-tool";
 import { requirePermission } from "@/lib/auth";
-import { getAreas, getAttributes, getCategories } from "@/lib/data/directory";
+import { getAreas, getAttributes, getCategories, getMalls } from "@/lib/data/directory";
 import { formatDate } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { Suspense } from "react";
@@ -18,11 +18,12 @@ export default function Page() {
 async function ImportPage() {
   await requirePermission("listings.import");
   const supabase = await createClient();
-  const [batches, categories, areas, attributes] = await Promise.all([
+  const [batches, categories, areas, attributes, malls] = await Promise.all([
     supabase.from("import_batches").select("id, filename, status, counts, created_at").order("created_at", { ascending: false }).limit(20),
     getCategories(),
     getAreas(),
     getAttributes(),
+    getMalls(),
   ]);
   return (
     <div className="space-y-8">
@@ -56,6 +57,7 @@ async function ImportPage() {
         <h2 className="text-lg font-semibold">Accepted codes</h2>
         <p className="mt-2"><strong>category / other_categories:</strong> {categories.map((c) => c.slug).join(", ")}</p>
         <p className="mt-2"><strong>area:</strong> {areas.filter((a) => a.type !== "state").map((a) => a.slug).join(", ")}</p>
+        <p className="mt-2"><strong>mall (optional, slug or name):</strong> {malls.map((m) => m.slug).join(", ")}</p>
         <p className="mt-2"><strong>attributes:</strong> {attributes.map((a) => a.slug).join(", ")}</p>
         <p className="mt-2"><strong>hours:</strong> e.g. <code>Mon-Sat 10:00-21:00; Fri 10:00-13:00,14:30-21:00; Sun closed</code></p>
       </section>

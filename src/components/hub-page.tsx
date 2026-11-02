@@ -10,6 +10,8 @@ import {
   getCategories,
   getHubCounts,
   getHubStats,
+  getMallCounts,
+  getMalls,
   nearbyAreas,
   searchListings,
 } from "@/lib/data/directory";
@@ -18,8 +20,9 @@ import { hubFaqs, hubSummary } from "@/lib/hub";
 import { fmt } from "@/lib/i18n/config";
 import { areaName, categoryName } from "@/lib/i18n/names";
 import { getI18n } from "@/lib/i18n/server";
-import { hubPath, listingPath } from "@/lib/paths";
+import { hubPath, listingPath, mallPath } from "@/lib/paths";
 import { breadcrumbJsonLd, faqJsonLd, itemListJsonLd } from "@/lib/seo";
+import type { Area } from "@/lib/types";
 
 // Area page (/petaling-jaya) and area + category page (/petaling-jaya/barbershop).
 export async function HubPage({ areaSlug, categorySlug }: { areaSlug: string; categorySlug: string | null }) {
@@ -33,10 +36,12 @@ export async function HubPage({ areaSlug, categorySlug }: { areaSlug: string; ca
   const category = categorySlug ? categories.find((c) => c.slug === categorySlug) : null;
   if (!area || (categorySlug && !category)) notFound();
 
-  const [stats, { items, total }, features] = await Promise.all([
+  const [stats, { items, total }, features, malls, mallCounts] = await Promise.all([
     getHubStats(area.slug, category?.slug ?? null),
     searchListings({ area: area.slug, category: category?.slug }),
     getFeatureSettings(),
+    getMalls(),
+    getMallCounts(),
   ]);
 
   const path = areaPath(areas, area);
@@ -56,6 +61,14 @@ export async function HubPage({ areaSlug, categorySlug }: { areaSlug: string; ca
   const nearby = nearbyAreas(areas, area)
     .map((a) => ({ area: a, count: countInTree(areas, counts, a.slug, category?.slug ?? null) }))
     .filter((n) => n.count > 0);
+  // Malls in this area or any area under it.
+  const inTree = new Set<number>();
+  const walk = (a: Area) => {
+    inTree.add(a.id);
+    areas.filter((c) => c.parent_id === a.id).forEach(walk);
+  };
+  walk(area);
+  const localMalls = category ? [] : malls.filter((m) => m.area_id !== null && inTree.has(m.area_id));
   const categoryLinks = categories
     .map((c) => ({ category: c, count: countInTree(areas, counts, area.slug, c.slug) }))
     .filter((c) => c.count > 0 && c.category.slug !== category?.slug);
@@ -122,6 +135,25 @@ export async function HubPage({ areaSlug, categorySlug }: { areaSlug: string; ca
                   className="inline-block rounded-full border border-line bg-white px-3 py-1.5 hover:border-brand-200"
                 >
                   {areaName(a, locale)} <span className="text-muted">({count})</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {localMalls.length > 0 && (
+        <section className="mt-12">
+          <h2 className="text-xl font-semibold">{t.growth.malls.malls}</h2>
+          <ul className="mt-3 flex flex-wrap gap-2 text-sm">
+            {localMalls.map((m) => (
+              <li key={m.slug}>
+                <Link
+                  href={href(mallPath(m.slug))}
+                  className="inline-block rounded-full border border-line bg-white px-3 py-1.5 hover:border-brand-200"
+                >
+                  {m.name}
+                  {(mallCounts.get(m.slug) ?? 0) > 0 && <span className="text-muted"> ({mallCounts.get(m.slug)})</span>}
                 </Link>
               </li>
             ))}

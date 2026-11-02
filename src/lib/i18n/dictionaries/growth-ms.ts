@@ -275,4 +275,25 @@ export const growthMs: typeof growthEn = {
     nudgeText: "Hai {name}, sudah agak lama sejak {service} anda di {shop}. Tempah semula: {link}",
     stop: "Untuk berhenti menerima mesej ini, nyahtanda peringatan di Akaun saya: {url}",
   },
+  malls: {
+    mall: "Pusat beli-belah",
+    anyMall: "Semua pusat beli-belah",
+    malls: "Pusat beli-belah",
+    inside: "Di dalam {mall}",
+    title: "Salun dan kedai kecantikan di {mall}",
+    titleCategory: "{category} di {mall}",
+    metaDesc:
+      "Cari {count} salun, kedai gunting, kedai kuku dan kecantikan di dalam {mall}. Lihat servis dan harga, kemudian tempah melalui WhatsApp.",
+    indexTitle: "Salun dan kecantikan di pusat beli-belah",
+    indexIntro:
+      "Cari salun rambut, kedai kuku, kedai gunting, studio bulu mata dan spa di dalam pusat beli-belah Lembah Klang, supaya temujanji boleh dibuat sambil membeli-belah.",
+    indexMeta: "Salun, kedai gunting, kuku dan kecantikan di pusat beli-belah Lembah Klang, mengikut pusat beli-belah.",
+    shopsOne: "1 kedai",
+    shopsMany: "{count} kedai",
+    noShops: "Belum ada kedai",
+    otherMalls: "Pusat beli-belah lain di {area}",
+    allMalls: "Semua pusat beli-belah",
+    browse: "Cari mengikut pusat beli-belah",
+    seeAllMalls: "Lihat semua pusat beli-belah",
+  },
 };

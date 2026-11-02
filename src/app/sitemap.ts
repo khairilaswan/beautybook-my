@@ -1,7 +1,15 @@
 import type { MetadataRoute } from "next";
-import { MIN_INDEXABLE_LISTINGS, countInTree, getAreas, getCategories, getHubCounts, getListingSlugs } from "@/lib/data/directory";
+import {
+  MIN_INDEXABLE_LISTINGS,
+  countInTree,
+  getAreas,
+  getCategories,
+  getHubCounts,
+  getListingSlugs,
+  getMallCounts,
+} from "@/lib/data/directory";
 import { LOCALES, languageAlternates, localePath } from "@/lib/i18n/config";
-import { hubPath, listingPath } from "@/lib/paths";
+import { hubPath, listingPath, mallPath } from "@/lib/paths";
 import { getGuides } from "@/lib/data/content";
 import { absoluteUrl } from "@/lib/seo";
 import { membersOnly } from "@/lib/site-access";
@@ -19,12 +27,13 @@ function localized(entries: Entry[]): MetadataRoute.Sitemap {
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   if (membersOnly) return [];
-  const [areas, categories, counts, listings, guides] = await Promise.all([
+  const [areas, categories, counts, listings, guides, mallCounts] = await Promise.all([
     getAreas(),
     getCategories(),
     getHubCounts(),
     getListingSlugs(),
     getGuides(),
+    getMallCounts(),
   ]);
   const hubs: Entry[] = [];
   for (const area of areas) {
@@ -37,6 +46,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       }
     }
   }
+  const malls: Entry[] = [...mallCounts]
+    .filter(([, count]) => count >= MIN_INDEXABLE_LISTINGS)
+    .map(([slug]) => ({ path: mallPath(slug), changeFrequency: "weekly", priority: 0.8 }));
   // Guides are written in English only, so they are listed once.
   const englishOnly: MetadataRoute.Sitemap = [
     { url: absoluteUrl("/guides"), changeFrequency: "weekly", priority: 0.7 },
@@ -53,6 +65,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: "/for-business", changeFrequency: "monthly", priority: 0.5 },
     { path: "/deals", changeFrequency: "daily", priority: 0.6 },
     ...hubs,
+    { path: mallPath(), changeFrequency: "weekly", priority: 0.6 },
+    ...malls,
     ...listings.map((l) => ({
       path: listingPath(l.slug),
       lastModified: l.updated_at,

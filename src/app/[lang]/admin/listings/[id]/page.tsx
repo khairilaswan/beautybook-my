@@ -5,7 +5,7 @@ import { ListingAdminTools } from "@/app/[lang]/admin/listings/[id]/tools";
 import { type AdminListing, ListingForm } from "@/app/[lang]/admin/listings/listing-form";
 import { HoursEditor, PhotoManager, ServicesEditor } from "@/app/[lang]/owner/[id]/editors";
 import { requirePermission } from "@/lib/auth";
-import { getAreas, getAttributes, getCategories } from "@/lib/data/directory";
+import { getAreas, getAttributes, getCategories, getMalls } from "@/lib/data/directory";
 import { formatDate } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { Suspense } from "react";
@@ -25,19 +25,20 @@ async function EditListingPage({ params, searchParams }: PageProps<"/[lang]/admi
   const { id } = await params;
   const { created } = await searchParams;
   const supabase = await createClient();
-  const [{ data }, areas, categories, attributes, services, hours, closures, photos, requests, members] = await Promise.all([
+  const [{ data }, areas, categories, attributes, malls, services, hours, closures, photos, requests, members] = await Promise.all([
     supabase
       .from("listings")
       .select(
         `id, name, slug, status, address, postcode, lat, lng, phone, whatsapp, website, instagram, facebook,
          description, price_level, gender, google_place_id, source, last_verified_at, phone_verified_at, created_at,
-         areas ( slug ), listing_categories ( is_primary, categories ( slug ) ), listing_attributes ( attribute_id )`,
+         areas ( slug ), malls ( slug ), listing_categories ( is_primary, categories ( slug ) ), listing_attributes ( attribute_id )`,
       )
       .eq("id", id)
       .maybeSingle(),
     getAreas(),
     getCategories(),
     getAttributes(),
+    getMalls(),
     supabase.from("services").select("name, price_from, price_to, duration_min").eq("listing_id", id).order("sort_order"),
     supabase.from("opening_hours").select("weekday, opens, closes").eq("listing_id", id),
     supabase.from("closures").select("date_from, date_to, note").eq("listing_id", id),
@@ -46,8 +47,9 @@ async function EditListingPage({ params, searchParams }: PageProps<"/[lang]/admi
     supabase.from("listing_members").select("user_id, role").eq("listing_id", id),
   ]);
   if (!data) notFound();
-  type Row = Omit<typeof data, "areas" | "listing_categories" | "listing_attributes"> & {
+  type Row = Omit<typeof data, "areas" | "malls" | "listing_categories" | "listing_attributes"> & {
     areas: { slug: string } | null;
+    malls: { slug: string } | null;
     listing_categories: { is_primary: boolean; categories: { slug: string } }[];
     listing_attributes: { attribute_id: number }[];
   };
@@ -55,6 +57,7 @@ async function EditListingPage({ params, searchParams }: PageProps<"/[lang]/admi
   const listing: AdminListing = {
     ...row,
     area_slug: row.areas?.slug ?? null,
+    mall_slug: row.malls?.slug ?? null,
     category_slugs: row.listing_categories.map((c) => c.categories.slug),
     primary_category: row.listing_categories.find((c) => c.is_primary)?.categories.slug ?? null,
     attribute_ids: row.listing_attributes.map((a) => a.attribute_id),
@@ -76,7 +79,7 @@ async function EditListingPage({ params, searchParams }: PageProps<"/[lang]/admi
         </div>
         <ListingAdminTools id={row.id} status={row.status} />
       </div>
-      <ListingForm listing={listing} areas={areas} categories={categories} attributes={attributes} />
+      <ListingForm listing={listing} areas={areas} categories={categories} attributes={attributes} malls={malls} />
       <section>
         <h2 className="text-lg font-semibold">Service menu</h2>
         <ServicesEditor listingId={row.id} slug={row.slug} initial={services.data ?? []} />

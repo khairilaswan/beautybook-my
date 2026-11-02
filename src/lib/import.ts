@@ -8,6 +8,7 @@ export const IMPORT_COLUMNS = [
   "category",
   "other_categories",
   "area",
+  "mall",
   "address",
   "postcode",
   "lat",
@@ -32,6 +33,7 @@ export const IMPORT_EXAMPLE: Record<(typeof IMPORT_COLUMNS)[number], string> = {
   category: "barbershop",
   other_categories: "",
   area: "bangsar",
+  mall: "",
   address: "12 Jalan Telawi 3, Bangsar Baru",
   postcode: "59100",
   lat: "3.1301",
@@ -62,6 +64,8 @@ export type CleanListing = {
   category: string;
   other_categories: string[];
   area: string;
+  // A mall slug or name; matched in resolveRows.
+  mall: string | null;
   address: string | null;
   postcode: string | null;
   lat: number | null;
@@ -187,6 +191,7 @@ export function cleanRow(row: ImportRow): { value?: CleanListing; errors: string
       category: category!,
       other_categories: list(row.other_categories),
       area: area!,
+      mall: text(row.mall),
       address: text(row.address),
       postcode,
       lat,

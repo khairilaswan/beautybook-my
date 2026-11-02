@@ -12,6 +12,17 @@ export type Area = {
   sort_order: number;
 };
 
+export type Mall = {
+  id: number;
+  slug: string;
+  name: string;
+  area_id: number | null;
+  address: string | null;
+  lat: number | null;
+  lng: number | null;
+  sort_order: number;
+};
+
 export type Category = {
   id: number;
   slug: string;
@@ -143,6 +154,7 @@ export type ListingDetail = {
   updated_at: string;
   is_claimed: boolean;
   area: Area | null;
+  mall: Pick<Mall, "slug" | "name"> | null;
   // Ancestors from the top down, e.g. [Kuala Lumpur, Bangsar].
   area_path: Area[];
   categories: (Category & { is_primary: boolean })[];
@@ -185,6 +197,8 @@ export type ListingCard = {
   has_deal: boolean;
   rating_avg: number | null;
   rating_count: number;
+  mall_name: string | null;
+  mall_slug: string | null;
   total_count: number;
 };
 
@@ -192,6 +206,7 @@ export type SearchParams = {
   q?: string;
   category?: string;
   area?: string;
+  mall?: string;
   attributes?: string[];
   gender?: "men" | "women";
   openNow?: boolean;

@@ -7,8 +7,9 @@ import { rememberSearch } from "@/components/recent-searches";
 import { useI18n } from "@/lib/i18n/client";
 import { fmt } from "@/lib/i18n/config";
 import { areaName, attributeName, categoryName } from "@/lib/i18n/names";
+import { mallGroups } from "@/lib/mall";
 import { RADIUS_OPTIONS } from "@/lib/search-params";
-import type { Area, Attribute, Category } from "@/lib/types";
+import type { Area, Attribute, Category, Mall } from "@/lib/types";
 
 // Shown together at the top: what many Malaysian customers check first.
 const TRUST_FILTERS = ["muslim-friendly", "muslimah-friendly", "women-only", "female-stylists", "halal-products", "prayer-room"];
@@ -17,11 +18,12 @@ type Props = {
   categories: Category[];
   areas: Area[];
   attributes: Attribute[];
+  malls: Mall[];
 };
 
 // Filters update the URL as they change, so results refresh instantly and
 // every filtered view has a shareable, indexable address.
-export function SearchFilters({ categories, areas, attributes }: Props) {
+export function SearchFilters({ categories, areas, attributes, malls }: Props) {
   const router = useRouter();
   const params = useSearchParams();
   const [pending, startTransition] = useTransition();
@@ -38,7 +40,7 @@ export function SearchFilters({ categories, areas, attributes }: Props) {
     next.delete("page");
     const qs = next.toString();
     startTransition(() => router.replace(href(`/search?${qs}`), { scroll: false }));
-    if (changes.q !== undefined || changes.category !== undefined || changes.area !== undefined) {
+    if (changes.q !== undefined || changes.category !== undefined || changes.area !== undefined || changes.mall !== undefined) {
       rememberSearch(qs);
       // Saved to the account for signed-in users; a no-op for guests.
       void recordSearch(next.get("q"), next.get("category"), next.get("area"));
@@ -68,6 +70,7 @@ export function SearchFilters({ categories, areas, attributes }: Props) {
           radius: params.get("radius") ?? "10",
           sort: "distance",
           area: null,
+          mall: null,
         });
       },
       () => setLocating(g.geoBlocked),
@@ -140,7 +143,7 @@ export function SearchFilters({ categories, areas, attributes }: Props) {
         <select
           className="mt-1 w-full rounded-xl border border-line bg-white px-3 py-2"
           value={params.get("area") ?? ""}
-          onChange={(e) => update({ area: e.target.value, near: null, radius: null })}
+          onChange={(e) => update({ area: e.target.value, mall: null, near: null, radius: null })}
         >
           <option value="">{t.common.allKlangValley}</option>
           {areas
@@ -159,6 +162,25 @@ export function SearchFilters({ categories, areas, attributes }: Props) {
             ))}
         </select>
       </label>
+      {malls.length > 0 && (
+        <label className="block text-sm">
+          <span className="font-medium">{t.growth.malls.mall}</span>
+          <select
+            className="mt-1 w-full rounded-xl border border-line bg-white px-3 py-2"
+            value={params.get("mall") ?? ""}
+            onChange={(e) => update({ mall: e.target.value, area: null, near: null, radius: null })}
+          >
+            <option value="">{t.growth.malls.anyMall}</option>
+            {mallGroups(malls, areas).map(({ city, malls: inCity }) => (
+              <optgroup key={city?.slug ?? "other"} label={city ? areaName(city, locale) : t.common.klangValley}>
+                {inCity.map((m) => (
+                  <option key={m.slug} value={m.slug}>{m.name}</option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+        </label>
+      )}
       <div className="flex flex-wrap gap-2 text-sm">
         <Toggle
           label={t.common.openNow}

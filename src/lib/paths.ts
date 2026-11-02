@@ -10,3 +10,9 @@ export function listingPath(slug: string): string {
 export function hubPath(areaSlug: string, categorySlug?: string | null): string {
   return categorySlug ? `/${areaSlug}/${categorySlug}` : `/${areaSlug}`;
 }
+
+// Mall landing pages: /mall/mid-valley-megamall. "mall" is a fixed segment,
+// so no area may use the slug "mall".
+export function mallPath(slug?: string | null): string {
+  return slug ? `/mall/${slug}` : "/mall";
+}

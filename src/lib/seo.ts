@@ -1,4 +1,4 @@
-import { listingPath } from "@/lib/paths";
+import { listingPath, mallPath } from "@/lib/paths";
 import { siteUrl } from "@/lib/env";
 import { photoUrl } from "@/lib/format";
 import { SCHEMA_DAYS, hhmm } from "@/lib/hours";
@@ -94,6 +94,9 @@ export function listingJsonLd(
         : undefined,
     employee: listing.staff.length
       ? listing.staff.map((s) => ({ "@type": "Person", name: s.name, jobTitle: s.title ?? undefined }))
+      : undefined,
+    containedInPlace: listing.mall
+      ? { "@type": "ShoppingCenter", "@id": absoluteUrl(`${mallPath(listing.mall.slug)}#mall`), name: listing.mall.name }
       : undefined,
     areaServed: listing.service_areas.length
       ? listing.service_areas.map((a) => ({ "@type": "Place", name: a.name }))
