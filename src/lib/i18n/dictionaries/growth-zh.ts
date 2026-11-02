@@ -68,6 +68,10 @@ export const growthZh: typeof growthEn = {
     bookDeal: "预约此优惠",
     speaks: "会说{languages}",
     bookWith: "预约 {name}",
+    video: "视频",
+    videoLabel: "{name} 的视频",
+    teamPhotoAlt: "{name} 的团队",
+    profileAlt: "{name} 头像",
   },
   booking: {
     chooseStaff: "请从列表中选择一位。",

@@ -70,7 +70,7 @@ export type Photo = {
   id: number;
   storage_path: string;
   alt: string | null;
-  kind: "shop" | "portfolio";
+  kind: "shop" | "portfolio" | "team";
   caption: string | null;
   category_id: number | null;
 };
@@ -164,7 +164,9 @@ export type ListingDetail = {
   services_are_template: boolean;
   hours: OpeningHours[];
   closures: Closure[];
+  // Shop photos first (the first is the profile photo), then team, then portfolio.
   photos: Photo[];
+  video_path: string | null;
   staff: StaffMember[];
   // Running today or later, soonest ending first.
   promotions: Promotion[];

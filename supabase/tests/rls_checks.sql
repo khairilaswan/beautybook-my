@@ -515,6 +515,29 @@ begin
   end;
 end $$;
 
+-- Shop media: owners set their own video and team photos, nobody else's
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '10000000-0000-4000-8000-000000000002', true);
+do $$ begin
+  update public.listings set video_path = '00000000-0000-4000-8000-000000000001/clip.mp4'
+    where id = '00000000-0000-4000-8000-000000000001';
+  if not found then raise exception 'owner could not set their shop video'; end if;
+  insert into public.photos (listing_id, storage_path, source, uploaded_by, kind, sort_order)
+  values ('00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000001/team.jpg', 'owner',
+          '10000000-0000-4000-8000-000000000002', 'team', 1000000000);
+end $$;
+do $$ begin
+  update public.listings set video_path = '00000000-0000-4000-8000-000000000002/clip.mp4'
+    where id = '00000000-0000-4000-8000-000000000001';
+  raise exception 'a video path outside the shop''s folder was accepted';
+exception when check_violation then null;
+end $$;
+do $$ begin
+  update public.listings set video_path = '00000000-0000-4000-8000-000000000002/clip.mp4'
+    where id = '00000000-0000-4000-8000-000000000002';
+  if found then raise exception 'owner set another shop''s video'; end if;
+end $$;
+
 reset role;
 select 'all RLS checks passed' as result;
 rollback;

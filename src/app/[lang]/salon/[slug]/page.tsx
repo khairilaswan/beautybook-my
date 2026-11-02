@@ -8,6 +8,7 @@ import { Breadcrumbs } from "@/components/breadcrumbs";
 import { JsonLd } from "@/components/json-ld";
 import { OpenStatus } from "@/components/open-status";
 import { ShopUserTools } from "@/components/shop-user-tools";
+import { Silhouette } from "@/components/silhouette";
 import { CompareButton } from "@/components/compare";
 import { DealsSection } from "@/components/shop/deals-section";
 import { PackagesSection } from "@/components/shop/packages-section";
@@ -20,7 +21,7 @@ import { getRatingSummary } from "@/lib/data/reviews";
 import { paymentsEnabled } from "@/lib/setup";
 import { getCategories, getListing, getRedirect } from "@/lib/data/directory";
 import { getShopTheme, getSiteSettings } from "@/lib/data/site-theme";
-import { formatDate, photoUrl, priceLabel, priceLevelLabel } from "@/lib/format";
+import { formatDate, photoUrl, priceLabel, priceLevelLabel, videoUrl } from "@/lib/format";
 import { weeklySchedule } from "@/lib/hours";
 import { alternatesFor, fmt } from "@/lib/i18n/config";
 import { areaName, attributeName, categoryName, serviceName } from "@/lib/i18n/names";
@@ -88,7 +89,10 @@ async function Shop({ params }: { params: PageProps<"/[lang]/salon/[slug]">["par
   ]);
   const g = t.growth.shop;
   const rating = features.reviewsEnabled ? await getRatingSummary(listing.id) : null;
-  const shopPhotos = listing.photos.filter((p) => p.kind !== "portfolio");
+  // Photos come shop first, and the first shop photo is the owner's profile pick.
+  const shopPhotos = listing.photos.filter((p) => p.kind === "shop");
+  const teamPhotos = listing.photos.filter((p) => p.kind === "team");
+  const profile = shopPhotos[0];
   const portfolio = listing.photos.filter((p) => p.kind === "portfolio");
   const shopTheme = ownerThemes ? await getShopTheme(listing.slug) : null;
   const category = listing.categories[0];
@@ -121,6 +125,19 @@ async function Shop({ params }: { params: PageProps<"/[lang]/salon/[slug]">["par
       )}
 
       <div className="mt-4 flex flex-wrap items-start gap-3">
+        <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full border border-line bg-brand-50 sm:h-20 sm:w-20">
+          {profile ? (
+            <Image
+              src={photoUrl(profile.storage_path)}
+              alt={fmt(g.profileAlt, { name: listing.name })}
+              fill
+              sizes="80px"
+              className="object-cover"
+            />
+          ) : (
+            <Silhouette />
+          )}
+        </div>
         <div className="min-w-0 flex-1">
           <h1 className="text-3xl font-bold tracking-tight">{listing.name}</h1>
           <p className="mt-1 text-muted">
@@ -231,6 +248,20 @@ async function Shop({ params }: { params: PageProps<"/[lang]/salon/[slug]">["par
             </section>
           )}
 
+          {listing.video_path && (
+            <section>
+              <h2 className="text-xl font-semibold">{g.video}</h2>
+              <video
+                src={videoUrl(listing.video_path)}
+                controls
+                playsInline
+                preload="metadata"
+                aria-label={fmt(g.videoLabel, { name: listing.name })}
+                className="mt-3 aspect-video w-full rounded-2xl bg-black"
+              />
+            </section>
+          )}
+
           {portfolio.length > 0 && (
             <section>
               <h2 className="text-xl font-semibold">{g.ourWork}</h2>
@@ -238,10 +269,25 @@ async function Shop({ params }: { params: PageProps<"/[lang]/salon/[slug]">["par
             </section>
           )}
 
-          {listing.staff.length > 0 && (
+          {(listing.staff.length > 0 || teamPhotos.length > 0) && (
             <section>
               <h2 className="text-xl font-semibold">{g.ourTeam}</h2>
-              <StaffSection staff={listing.staff} bookable={isOpenForRequests} />
+              {teamPhotos.length > 0 && (
+                <div className={`mt-3 grid gap-2 ${teamPhotos.length > 1 ? "sm:grid-cols-2" : ""}`}>
+                  {teamPhotos.map((p) => (
+                    <div key={p.id} className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-brand-50">
+                      <Image
+                        src={photoUrl(p.storage_path)}
+                        alt={p.alt ?? fmt(g.teamPhotoAlt, { name: listing.name })}
+                        fill
+                        sizes="(min-width: 1024px) 40vw, 100vw"
+                        className="object-cover"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+              {listing.staff.length > 0 && <StaffSection staff={listing.staff} bookable={isOpenForRequests} />}
             </section>
           )}
 

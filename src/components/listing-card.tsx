@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { CompareButton } from "@/components/compare";
+import { Silhouette } from "@/components/silhouette";
 import { photoUrl, priceLevelLabel, priceRangeLabel } from "@/lib/format";
 import { areaName, categoryName } from "@/lib/i18n/names";
 import { type I18n, getI18n } from "@/lib/i18n/server";
@@ -32,9 +33,7 @@ export function ListingCard({
               className="object-cover"
             />
           ) : (
-            <div className="flex h-full items-center justify-center text-4xl font-bold text-brand-200">
-              {listing.name.slice(0, 1)}
-            </div>
+            <Silhouette className="p-6" />
           )}
           <div className="absolute left-3 top-3 flex flex-wrap gap-1">
             {listing.is_featured && (

@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { Silhouette } from "@/components/silhouette";
 import { photoUrl } from "@/lib/format";
 import { fmt } from "@/lib/i18n/config";
 import { getI18n } from "@/lib/i18n/server";
@@ -15,7 +16,7 @@ export async function StaffSection({ staff, bookable }: { staff: StaffMember[]; 
             {s.photo_path ? (
               <Image src={photoUrl(s.photo_path)} alt={s.name} fill sizes="64px" className="object-cover" />
             ) : (
-              <span className="flex h-full items-center justify-center text-xl font-bold text-brand-200">{s.name.slice(0, 1)}</span>
+              <Silhouette />
             )}
           </div>
           <div className="min-w-0 text-sm">

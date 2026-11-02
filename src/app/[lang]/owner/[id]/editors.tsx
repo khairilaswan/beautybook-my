@@ -10,6 +10,7 @@ import {
   saveServices,
   updateListingDetails,
 } from "@/app/[lang]/owner/actions";
+import { setProfilePhoto } from "@/app/[lang]/owner/media-actions";
 import { photoUrl } from "@/lib/format";
 import { WEEKDAYS, hhmm } from "@/lib/hours";
 import { uploadFile } from "@/lib/supabase/browser";
@@ -276,7 +277,7 @@ export function PhotoManager(props: {
   return (
     <div className="mt-3 space-y-3 rounded-2xl border border-line bg-white p-5">
       <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
-        {props.photos.map((p) => (
+        {props.photos.map((p, i) => (
           <div key={p.id} className="group relative aspect-square overflow-hidden rounded-xl bg-brand-50">
             <Image src={photoUrl(p.storage_path)} alt="" fill sizes="20vw" className="object-cover" />
             <button
@@ -288,9 +289,26 @@ export function PhotoManager(props: {
             >
               ✕
             </button>
+            {i === 0 ? (
+              <span className="absolute inset-x-1 bottom-1 rounded-full bg-ink px-2 py-0.5 text-center text-xs font-medium text-white">
+                Profile photo
+              </span>
+            ) : (
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => start(async () => setState(await setProfilePhoto(props.listingId, props.slug, p.id)))}
+                className="absolute inset-x-1 bottom-1 rounded-full bg-white/90 px-2 py-0.5 text-xs font-medium"
+              >
+                Make profile photo
+              </button>
+            )}
           </div>
         ))}
       </div>
+      {props.photos.length > 0 && (
+        <p className="text-xs text-muted">Your profile photo shows first on your shop page and on search results.</p>
+      )}
       <label className="inline-block cursor-pointer rounded-full border border-line px-4 py-2 text-sm">
         {pending ? "Uploading…" : "Add photos"}
         <input

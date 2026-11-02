@@ -68,6 +68,10 @@ export const growthEn = {
     bookDeal: "Book this deal",
     speaks: "Speaks {languages}",
     bookWith: "Book with {name}",
+    video: "Video",
+    videoLabel: "Video of {name}",
+    teamPhotoAlt: "The team at {name}",
+    profileAlt: "{name} profile photo",
   },
   booking: {
     chooseStaff: "Please choose someone from the list.",

@@ -14,13 +14,20 @@ const EXTENSIONS: Record<string, string> = {
   "application/pdf": "pdf",
 };
 
+const VIDEO_EXTENSIONS: Record<string, string> = {
+  "video/mp4": "mp4",
+  "video/webm": "webm",
+  "video/quicktime": "mov",
+};
+
 export async function uploadFile(
-  bucket: "listing-photos" | "claim-evidence",
+  bucket: "listing-photos" | "listing-videos" | "claim-evidence",
   folder: string,
   file: File,
   maxBytes: number,
 ): Promise<{ path: string } | { error: string }> {
-  const ext = EXTENSIONS[file.type];
+  const ext = bucket === "listing-videos" ? VIDEO_EXTENSIONS[file.type] : EXTENSIONS[file.type];
+  if (bucket === "listing-videos" && !ext) return { error: "Please use an MP4, WebM or MOV video." };
   if (!ext || (bucket === "listing-photos" && ext === "pdf")) {
     return { error: bucket === "listing-photos" ? "Please use a JPG, PNG or WebP photo." : "Please use a JPG, PNG, WebP or PDF." };
   }

@@ -38,6 +38,10 @@ export function photoUrl(storagePath: string): string {
   return `${supabaseUrl()}/storage/v1/object/public/listing-photos/${storagePath}`;
 }
 
+export function videoUrl(storagePath: string): string {
+  return `${supabaseUrl()}/storage/v1/object/public/listing-videos/${storagePath}`;
+}
+
 export function formatDate(iso: string, locale: Locale = "en"): string {
   return localDate(iso, locale);
 }

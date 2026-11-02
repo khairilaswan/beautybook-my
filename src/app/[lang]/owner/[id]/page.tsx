@@ -17,6 +17,7 @@ import {
   StaffEditor,
   VoucherEditor,
 } from "@/app/[lang]/owner/[id]/growth-editors";
+import { TeamPhotosManager, VideoManager } from "@/app/[lang]/owner/[id]/media-editors";
 import { ShopThemePicker } from "@/app/[lang]/owner/[id]/shop-theme";
 import { Stars } from "@/components/shop/reviews-section";
 import { RequestStatusButtons } from "@/components/request-status-buttons";
@@ -83,7 +84,7 @@ async function Dashboard({
 
   const { data: l } = await supabase
     .from("listings")
-    .select("id, slug, name, status, phone, description, website, instagram, facebook, price_level, gender, area_id, mall_id")
+    .select("id, slug, name, status, phone, description, website, instagram, facebook, price_level, gender, area_id, mall_id, video_path")
     .eq("id", id)
     .single();
   if (!l) notFound();
@@ -278,6 +279,7 @@ type ListingRow = {
   price_level: number | null;
   gender: string | null;
   mall_id: number | null;
+  video_path: string | null;
 };
 
 async function Profile({ listing: l }: { listing: ListingRow }) {
@@ -286,7 +288,7 @@ async function Profile({ listing: l }: { listing: ListingRow }) {
     supabase.from("services").select("name, price_from, price_to, duration_min").eq("listing_id", l.id).order("sort_order"),
     supabase.from("opening_hours").select("weekday, opens, closes").eq("listing_id", l.id),
     supabase.from("closures").select("date_from, date_to, note").eq("listing_id", l.id).order("date_from"),
-    supabase.from("photos").select("id, storage_path, status").eq("listing_id", l.id).eq("kind", "shop").order("sort_order"),
+    supabase.from("photos").select("id, storage_path, status").eq("listing_id", l.id).eq("kind", "shop").order("sort_order").order("id"),
     supabase.from("listing_attributes").select("attribute_id").eq("listing_id", l.id),
     supabase.from("listing_service_areas").select("area_id").eq("listing_id", l.id),
     getAttributes(),
@@ -347,7 +349,13 @@ async function Profile({ listing: l }: { listing: ListingRow }) {
 
       <section>
         <h2 className="text-lg font-semibold">Shop photos</h2>
+        <p className="text-sm text-muted">Pick one as your profile photo. Customers see it first.</p>
         <PhotoManager listingId={l.id} slug={l.slug} photos={photos.data ?? []} />
+      </section>
+
+      <section>
+        <h2 className="text-lg font-semibold">Shop video</h2>
+        <VideoManager listingId={l.id} slug={l.slug} videoPath={l.video_path} />
       </section>
 
       {settings.ownerThemes && (
@@ -365,7 +373,7 @@ async function Profile({ listing: l }: { listing: ListingRow }) {
 
 async function Showcase({ listingId, slug }: { listingId: string; slug: string }) {
   const supabase = await createClient();
-  const [portfolio, staff, promotions, packages, categories] = await Promise.all([
+  const [portfolio, staff, promotions, packages, categories, teamPhotos] = await Promise.all([
     supabase
       .from("photos")
       .select("id, storage_path, caption, category_id")
@@ -385,6 +393,7 @@ async function Showcase({ listingId, slug }: { listingId: string; slug: string }
       .eq("listing_id", listingId)
       .order("sort_order"),
     getCategories(),
+    supabase.from("photos").select("id, storage_path").eq("listing_id", listingId).eq("kind", "team").order("sort_order"),
   ]);
   return (
     <div className="space-y-10">
@@ -394,6 +403,7 @@ async function Showcase({ listingId, slug }: { listingId: string; slug: string }
       </section>
       <section>
         <h2 className="text-lg font-semibold">Team</h2>
+        <TeamPhotosManager listingId={listingId} slug={slug} photos={teamPhotos.data ?? []} />
         <StaffEditor listingId={listingId} slug={slug} initial={staff.data ?? []} />
       </section>
       <section>
