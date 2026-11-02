@@ -4,7 +4,8 @@ export const membersOnly = process.env.SITE_ACCESS !== "public";
 
 // Pages anyone can open in members-only mode.
 // Invite links stay open so a friend can see who invited them before signing up.
-const OPEN_PATHS = ["/login", "/auth", "/privacy", "/pending", "/invite", "/api/payments/webhook", "/api/cron"];
+// The mobile app's API checks its own Bearer token (src/lib/mobile-api.ts).
+const OPEN_PATHS = ["/login", "/auth", "/privacy", "/pending", "/invite", "/api/payments/webhook", "/api/cron", "/api/mobile"];
 
 export function isOpenPath(pathname: string): boolean {
   return OPEN_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));

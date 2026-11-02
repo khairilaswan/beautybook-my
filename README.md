@@ -9,6 +9,7 @@ Customers find a shop, pick a service and a preferred time, and send the request
 - Next.js 16 (App Router, Cache Components), Tailwind CSS 4
 - Supabase: Postgres with row-level security on every table, Auth (Google, Facebook, phone OTP, email link), Storage
 - WhatsApp: `wa.me` links for customer requests; the WhatsApp Cloud API only sends claim codes
+- Phone app: Expo (React Native) in [`mobile/`](mobile/README.md), on the same Supabase project; it uses the website's `/api/mobile/*` routes for bookings, quotes and account deletion
 
 ## Run it locally
 

@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // The mobile app has its own lint and TypeScript setup (mobile/package.json).
+    "mobile/**",
   ]),
 ]);
 
