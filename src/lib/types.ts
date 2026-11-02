@@ -34,6 +34,8 @@ export type Attribute = {
 export type Service = {
   id: number;
   name: string;
+  // Standard menu items only: the Malay name, shown on /ms pages.
+  name_ms?: string | null;
   price_from: number | null;
   price_to: number | null;
   duration_min: number | null;

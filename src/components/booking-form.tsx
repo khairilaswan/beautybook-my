@@ -1,11 +1,14 @@
 "use client";
 
 import { useActionState, useEffect, useMemo, useState } from "react";
-import { createBookingRequest, type BookingState } from "@/app/salon/[slug]/actions";
+import { createBookingRequest, type BookingState } from "@/app/[lang]/salon/[slug]/actions";
 import { Turnstile } from "@/components/turnstile";
 import { useIsClient } from "@/components/use-is-client";
 import { priceLabel } from "@/lib/format";
 import { malaysiaNow, timeSlots } from "@/lib/hours";
+import { useI18n } from "@/lib/i18n/client";
+import { HTML_LANG, type Locale } from "@/lib/i18n/config";
+import { localTime, serviceName } from "@/lib/i18n/names";
 import type { OpeningHours, Service } from "@/lib/types";
 
 type Props = {
@@ -16,7 +19,10 @@ type Props = {
 
 const DAYS_AHEAD = 14;
 
-function upcomingDates(): { value: string; label: string; weekday: number }[] {
+function upcomingDates(
+  locale: Locale,
+  words: { today: string; tomorrow: string },
+): { value: string; label: string; weekday: number }[] {
   const today = malaysiaNow();
   const base = new Date(`${today.date}T12:00:00+08:00`);
   return Array.from({ length: DAYS_AHEAD }, (_, i) => {
@@ -24,10 +30,10 @@ function upcomingDates(): { value: string; label: string; weekday: number }[] {
     const value = d.toISOString().slice(0, 10);
     const label =
       i === 0
-        ? "Today"
+        ? words.today
         : i === 1
-          ? "Tomorrow"
-          : new Intl.DateTimeFormat("en-MY", {
+          ? words.tomorrow
+          : new Intl.DateTimeFormat(HTML_LANG[locale], {
               weekday: "short",
               day: "numeric",
               month: "short",
@@ -40,7 +46,11 @@ function upcomingDates(): { value: string; label: string; weekday: number }[] {
 export function BookingForm({ listingId, services, hours }: Props) {
   const [state, action, pending] = useActionState<BookingState, FormData>(createBookingRequest, {});
   const isClient = useIsClient();
-  const dates = useMemo(() => (isClient ? upcomingDates() : []), [isClient]);
+  const { locale, t } = useI18n();
+  const dates = useMemo(
+    () => (isClient ? upcomingDates(locale, { today: t.booking.today, tomorrow: t.booking.tomorrow }) : []),
+    [isClient, locale, t],
+  );
   const [date, setDate] = useState("");
   const selected = dates.find((d) => d.value === date);
   const slots = useMemo(() => {
@@ -63,13 +73,13 @@ export function BookingForm({ listingId, services, hours }: Props) {
     <form action={action} className="space-y-3">
       <input type="hidden" name="listingId" value={listingId} />
       <label className="block text-sm">
-        <span className="font-medium">Service</span>
+        <span className="font-medium">{t.common.service}</span>
         <select name="serviceId" required className="mt-1 w-full rounded-xl border border-line bg-white px-3 py-2">
           {services.map((s) => {
-            const price = priceLabel(s);
+            const price = priceLabel(s, locale);
             return (
               <option key={s.id} value={s.id}>
-                {s.name}
+                {serviceName(s, locale)}
                 {price ? ` (${price})` : ""}
               </option>
             );
@@ -78,42 +88,42 @@ export function BookingForm({ listingId, services, hours }: Props) {
       </label>
       <div className="grid grid-cols-2 gap-2">
         <label className="block text-sm">
-          <span className="font-medium">Day</span>
+          <span className="font-medium">{t.booking.day}</span>
           <select
             name="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
             className="mt-1 w-full rounded-xl border border-line bg-white px-3 py-2"
           >
-            <option value="">Any day</option>
+            <option value="">{t.booking.anyDay}</option>
             {dates.map((d) => (
               <option key={d.value} value={d.value}>{d.label}</option>
             ))}
           </select>
         </label>
         <label className="block text-sm">
-          <span className="font-medium">Time</span>
+          <span className="font-medium">{t.booking.time}</span>
           <select
             name="time"
             disabled={!date}
             className="mt-1 w-full rounded-xl border border-line bg-white px-3 py-2 disabled:bg-canvas"
           >
-            <option value="">{date && slots.length === 0 ? "Closed" : "Any time"}</option>
-            {slots.map((t) => (
-              <option key={t} value={t}>
-                {new Date(`2000-01-01T${t}:00`).toLocaleTimeString("en-MY", { hour: "numeric", minute: "2-digit" })}
+            <option value="">{date && slots.length === 0 ? t.common.closed : t.booking.anyTime}</option>
+            {slots.map((slot) => (
+              <option key={slot} value={slot}>
+                {localTime(slot, locale)}
               </option>
             ))}
           </select>
         </label>
       </div>
       <label className="block text-sm">
-        <span className="font-medium">Your name</span>
+        <span className="font-medium">{t.booking.yourName}</span>
         <input name="name" required maxLength={80} autoComplete="given-name" className="mt-1 w-full rounded-xl border border-line bg-white px-3 py-2" />
       </label>
       <label className="block text-sm">
-        <span className="font-medium">Note (optional)</span>
-        <input name="note" maxLength={300} placeholder="e.g. first visit, long hair" className="mt-1 w-full rounded-xl border border-line bg-white px-3 py-2" />
+        <span className="font-medium">{t.booking.note}</span>
+        <input name="note" maxLength={300} placeholder={t.booking.notePlaceholder} className="mt-1 w-full rounded-xl border border-line bg-white px-3 py-2" />
       </label>
       <Turnstile />
       {state.error && <p role="alert" className="text-sm text-brand-700">{state.error}</p>}
@@ -121,11 +131,9 @@ export function BookingForm({ listingId, services, hours }: Props) {
         disabled={pending}
         className="flex w-full items-center justify-center gap-2 rounded-xl bg-whatsapp px-4 py-3 font-semibold text-white hover:brightness-95 disabled:opacity-60"
       >
-        {pending ? "Opening WhatsApp…" : "Send request on WhatsApp"}
+        {pending ? t.booking.opening : t.booking.send}
       </button>
-      <p className="text-xs text-muted">
-        This is a request, not a confirmed booking. The shop replies on WhatsApp to confirm.
-      </p>
+      <p className="text-xs text-muted">{t.booking.disclaimer}</p>
     </form>
   );
 }

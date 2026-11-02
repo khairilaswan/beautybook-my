@@ -1,5 +1,7 @@
 import "server-only";
 import { notFound, redirect } from "next/navigation";
+import { localePath } from "@/lib/i18n/config";
+import { getRequestLocale } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 
 export type Permission =
@@ -40,10 +42,17 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   };
 }
 
+// `next` is the unprefixed path; both it and the sign-in page keep the
+// visitor's language.
 export async function requireUser(next: string): Promise<CurrentUser> {
   const user = await getCurrentUser();
-  if (!user) redirect(`/login?next=${encodeURIComponent(next)}`);
+  if (!user) redirect(await loginPath(next));
   return user;
+}
+
+export async function loginPath(next: string): Promise<string> {
+  const locale = await getRequestLocale();
+  return localePath(locale, `/login?next=${encodeURIComponent(localePath(locale, next))}`);
 }
 
 export async function getStaff(userId: string): Promise<StaffInfo | null> {

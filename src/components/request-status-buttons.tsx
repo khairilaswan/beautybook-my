@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
-import { setRequestStatus } from "@/app/owner/actions";
+import { setRequestStatus } from "@/app/[lang]/owner/actions";
 
 type Status = "confirmed" | "declined" | "completed" | "no_show";
 

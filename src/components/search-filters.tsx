@@ -2,8 +2,11 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTransition } from "react";
-import { recordSearch } from "@/app/account/actions";
+import { recordSearch } from "@/app/[lang]/account/actions";
 import { rememberSearch } from "@/components/recent-searches";
+import { useI18n } from "@/lib/i18n/client";
+import { fmt } from "@/lib/i18n/config";
+import { areaName, attributeName, categoryName } from "@/lib/i18n/names";
 import type { Area, Attribute, Category } from "@/lib/types";
 
 type Props = {
@@ -18,6 +21,7 @@ export function SearchFilters({ categories, areas, attributes }: Props) {
   const router = useRouter();
   const params = useSearchParams();
   const [pending, startTransition] = useTransition();
+  const { locale, t, href } = useI18n();
 
   function update(changes: Record<string, string | string[] | null>) {
     const next = new URLSearchParams(params.toString());
@@ -28,7 +32,7 @@ export function SearchFilters({ categories, areas, attributes }: Props) {
     }
     next.delete("page");
     const qs = next.toString();
-    startTransition(() => router.replace(`/search?${qs}`, { scroll: false }));
+    startTransition(() => router.replace(href(`/search?${qs}`), { scroll: false }));
     if (changes.q !== undefined || changes.category !== undefined || changes.area !== undefined) {
       rememberSearch(qs);
       // Saved to the account for signed-in users; a no-op for guests.
@@ -38,7 +42,6 @@ export function SearchFilters({ categories, areas, attributes }: Props) {
 
   const selectedAttrs = params.getAll("attr");
   const groups = ["audience", "service_mode", "language", "amenity"] as const;
-  const groupNames = { audience: "Good for", service_mode: "How", language: "Languages", amenity: "Amenities" };
 
   return (
     <form
@@ -55,43 +58,45 @@ export function SearchFilters({ categories, areas, attributes }: Props) {
           name="q"
           type="search"
           defaultValue={params.get("q") ?? ""}
-          placeholder="Shop name or service"
+          placeholder={t.filters.placeholder}
           className="w-full rounded-xl border border-line bg-white px-3 py-2"
         />
         <button className="rounded-xl bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700">
-          Search
+          {t.common.search}
         </button>
       </div>
       <label className="block text-sm">
-        <span className="font-medium">Service</span>
+        <span className="font-medium">{t.common.service}</span>
         <select
           className="mt-1 w-full rounded-xl border border-line bg-white px-3 py-2"
           value={params.get("category") ?? ""}
           onChange={(e) => update({ category: e.target.value })}
         >
-          <option value="">All services</option>
+          <option value="">{t.filters.allServices}</option>
           {categories.map((c) => (
-            <option key={c.slug} value={c.slug}>{c.name_en}</option>
+            <option key={c.slug} value={c.slug}>{categoryName(c, locale)}</option>
           ))}
         </select>
       </label>
       <label className="block text-sm">
-        <span className="font-medium">Area</span>
+        <span className="font-medium">{t.common.area}</span>
         <select
           className="mt-1 w-full rounded-xl border border-line bg-white px-3 py-2"
           value={params.get("area") ?? ""}
           onChange={(e) => update({ area: e.target.value })}
         >
-          <option value="">All of Klang Valley</option>
+          <option value="">{t.common.allKlangValley}</option>
           {areas
             .filter((a) => a.type !== "area")
             .map((city) => (
-              <optgroup key={city.slug} label={city.name}>
-                {city.type === "city" && <option value={city.slug}>All of {city.name}</option>}
+              <optgroup key={city.slug} label={areaName(city, locale)}>
+                {city.type === "city" && (
+                  <option value={city.slug}>{fmt(t.common.allOf, { area: areaName(city, locale) })}</option>
+                )}
                 {areas
                   .filter((a) => a.parent_id === city.id)
                   .map((a) => (
-                    <option key={a.slug} value={a.slug}>{a.name}</option>
+                    <option key={a.slug} value={a.slug}>{areaName(a, locale)}</option>
                   ))}
               </optgroup>
             ))}
@@ -99,31 +104,31 @@ export function SearchFilters({ categories, areas, attributes }: Props) {
       </label>
       <div className="flex flex-wrap gap-2 text-sm">
         <Toggle
-          label="Open now"
+          label={t.common.openNow}
           checked={params.get("open") === "1"}
           onChange={(on) => update({ open: on ? "1" : null })}
         />
         <Toggle
-          label="Men"
+          label={t.common.gender.men}
           checked={params.get("for") === "men"}
           onChange={(on) => update({ for: on ? "men" : null })}
         />
         <Toggle
-          label="Women"
+          label={t.common.gender.women}
           checked={params.get("for") === "women"}
           onChange={(on) => update({ for: on ? "women" : null })}
         />
       </div>
       {groups.map((group) => (
         <fieldset key={group} className="text-sm">
-          <legend className="font-medium">{groupNames[group]}</legend>
+          <legend className="font-medium">{t.filters.groups[group]}</legend>
           <div className="mt-2 flex flex-wrap gap-2">
             {attributes
               .filter((a) => a.group_name === group)
               .map((a) => (
                 <Toggle
                   key={a.slug}
-                  label={a.name_en}
+                  label={attributeName(a, locale)}
                   checked={selectedAttrs.includes(a.slug)}
                   onChange={(on) =>
                     update({

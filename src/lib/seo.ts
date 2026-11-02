@@ -115,7 +115,7 @@ export function siteJsonLd(): JsonLd[] {
       "@id": absoluteUrl("/#website"),
       name: "BeautyBook",
       url: absoluteUrl("/"),
-      inLanguage: "en-MY",
+      inLanguage: ["en-MY", "ms-MY", "zh-Hans-MY"],
       potentialAction: {
         "@type": "SearchAction",
         target: { "@type": "EntryPoint", urlTemplate: `${absoluteUrl("/search")}?q={search_term_string}` },

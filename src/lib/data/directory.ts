@@ -196,12 +196,13 @@ export async function getListing(slug: string): Promise<ListingDetail | null> {
   if (services.length === 0 && categories.length > 0) {
     const { data: templates } = await supabase
       .from("service_templates")
-      .select("id, name_en, duration_min, sort_order")
+      .select("id, name_en, name_ms, duration_min, sort_order")
       .eq("category_id", categories[0].id)
       .order("sort_order");
     services = (templates ?? []).map((t) => ({
       id: -t.id,
       name: t.name_en,
+      name_ms: t.name_ms,
       price_from: null,
       price_to: null,
       duration_min: t.duration_min,

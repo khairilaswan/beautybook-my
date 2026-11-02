@@ -2,10 +2,12 @@
 
 import { useIsClient } from "@/components/use-is-client";
 import { isOpenAt } from "@/lib/hours";
+import { useI18n } from "@/lib/i18n/client";
 import type { Closure, OpeningHours } from "@/lib/types";
 
 export function OpenStatus({ hours, closures }: { hours: OpeningHours[]; closures: Closure[] }) {
   const isClient = useIsClient();
+  const { t } = useI18n();
   if (!isClient || hours.length === 0) return null;
   const open = isOpenAt(hours, closures);
   return (
@@ -14,7 +16,7 @@ export function OpenStatus({ hours, closures }: { hours: OpeningHours[]; closure
         open ? "bg-green-50 text-whatsapp" : "bg-canvas text-muted"
       }`}
     >
-      {open ? "Open now" : "Closed now"}
+      {open ? t.common.openNow : t.common.closedNow}
     </span>
   );
 }

@@ -56,3 +56,12 @@ CI runs all four on every pull request.
 ## Importing listings
 
 `/admin/import` takes CSV, XLSX or JSON with up to 500 rows; download the template there. Only `name`, `category` and `area` are required. A row updates an existing listing when its `slug`, `google_place_id` or `phone` matches; a row whose name matches an existing listing in the same area is skipped, so add the slug to update it. Every import can be undone from the same page.
+
+## Languages (English, Bahasa Melayu, 中文)
+
+- Every page lives under `src/app/[lang]/`. English URLs have no prefix (`/salon/x`); Malay and Chinese use `/ms/...` and `/zh/...` with the same slugs. `src/proxy.ts` rewrites unprefixed paths to `/en/...` internally and 308s `/en/...` back to the unprefixed URL.
+- Strings live in `src/lib/i18n/dictionaries/{en,ms,zh}.ts`; `en.ts` defines the keys and TypeScript fails if `ms.ts` or `zh.ts` misses one.
+- Server Components: `const { t, href, locale } = await getI18n()` from `@/lib/i18n/server`. Client Components: `useI18n()` from `@/lib/i18n/client`. Server Actions: `getActionI18n()`. Wrap internal links in `href("/path")` so they keep the language, and use `fmt(t.x, { name })` for placeholders.
+- Category, attribute and area names: `categoryName`, `attributeName`, `areaName` in `@/lib/i18n/names`.
+- Pages set `alternates: alternatesFor(locale, path)` for canonical + hreflang; the sitemap lists every page in all three languages with hreflang links.
+- Admin and owner dashboards are English only.
