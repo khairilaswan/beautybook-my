@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
   const { data } = await queryListings(
     filters,
     `slug, name, status, address, postcode, lat, lng, phone, whatsapp, website, instagram, facebook, description,
-     price_level, gender, google_place_id, areas ( slug ),
+     price_level, gender, google_place_id, areas!listings_area_id_fkey ( slug ),
      listing_categories ( is_primary, categories ( slug ) ), listing_attributes ( attributes ( slug ) )`,
     20000,
   );
