@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { getLiveDeals } from "@/lib/data/content";
@@ -40,6 +41,8 @@ async function Deals({ searchParams }: { searchParams: PageProps<"/[lang]/deals"
   const [{ occasion }, { locale, t, href }] = await Promise.all([searchParams, getI18n()]);
   const g = t.growth.deals;
   const pick = OCCASIONS.includes(occasion as Occasion) ? (occasion as Occasion) : null;
+  // Today's date decides which deals are live, so this part renders per request.
+  await connection();
   const today = malaysiaNow().date;
   const [deals, areas] = await Promise.all([getLiveDeals(today), getAreas()]);
   const live = deals.filter((d) => d.ends_on >= today);
