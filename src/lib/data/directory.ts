@@ -162,6 +162,8 @@ export async function searchListings(params: SearchParams): Promise<{
   return { items, total: items.length > 0 ? Number(items[0].total_count) : 0 };
 }
 
+const KIND_ORDER: Record<ListingDetail["photos"][number]["kind"], number> = { shop: 0, team: 1, portfolio: 2 };
+
 export async function getListing(slug: string): Promise<ListingDetail | null> {
   "use cache";
   cacheLife("hours");
@@ -171,7 +173,7 @@ export async function getListing(slug: string): Promise<ListingDetail | null> {
     .from("listings")
     .select(
       `id, slug, name, status, address, postcode, lat, lng, phone, whatsapp, website,
-       instagram, facebook, description, price_level, gender, last_verified_at, updated_at, area_id,
+       instagram, facebook, description, price_level, gender, last_verified_at, updated_at, area_id, video_path,
        listing_categories ( is_primary, categories ( id, slug, slug_ms, name_en, name_ms, name_zh, schema_type, sort_order ) ),
        listing_attributes ( attributes ( id, slug, group_name, name_en, name_ms ) ),
        services ( id, name, price_from, price_to, duration_min, sort_order ),
@@ -274,7 +276,8 @@ export async function getListing(slug: string): Promise<ListingDetail | null> {
     services_are_template: servicesAreTemplate,
     hours: row.opening_hours,
     closures: row.closures,
-    photos: [...row.photos].sort((a, b) => a.sort_order - b.sort_order),
+    photos: [...row.photos].sort((a, b) => KIND_ORDER[a.kind] - KIND_ORDER[b.kind] || a.sort_order - b.sort_order || a.id - b.id),
+    video_path: row.video_path,
     staff: row.shop_staff.filter((s) => s.is_active).sort((a, b) => a.sort_order - b.sort_order || a.id - b.id),
     promotions: row.promotions
       .filter((p) => p.ends_on >= todayInMalaysia())

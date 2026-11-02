@@ -68,6 +68,10 @@ export const growthMs: typeof growthEn = {
     bookDeal: "Tempah tawaran ini",
     speaks: "Bertutur {languages}",
     bookWith: "Tempah dengan {name}",
+    video: "Video",
+    videoLabel: "Video {name}",
+    teamPhotoAlt: "Pasukan di {name}",
+    profileAlt: "Foto profil {name}",
   },
   booking: {
     chooseStaff: "Sila pilih seorang daripada senarai.",
