@@ -21,6 +21,8 @@ export type Category = {
   name_zh: string | null;
   schema_type: string;
   sort_order: number;
+  // Usual days between visits, for "time for a touch-up".
+  rebook_days?: number | null;
 };
 
 export type Attribute = {
@@ -57,6 +59,65 @@ export type Photo = {
   id: number;
   storage_path: string;
   alt: string | null;
+  kind: "shop" | "portfolio";
+  caption: string | null;
+  category_id: number | null;
+};
+
+export type StaffMember = {
+  id: number;
+  name: string;
+  title: string | null;
+  bio: string | null;
+  photo_path: string | null;
+  languages: string[];
+};
+
+export const OCCASIONS = ["raya", "cny", "deepavali", "christmas", "merdeka", "wedding", "other"] as const;
+export type Occasion = (typeof OCCASIONS)[number];
+
+export type Promotion = {
+  id: number;
+  title: string;
+  details: string | null;
+  price_label: string | null;
+  occasion: Occasion;
+  starts_on: string;
+  ends_on: string;
+};
+
+export const PACKAGE_KINDS = ["bridal", "event", "group", "other"] as const;
+export type PackageKind = (typeof PACKAGE_KINDS)[number];
+
+export type ServicePackage = {
+  id: number;
+  kind: PackageKind;
+  name: string;
+  description: string | null;
+  includes: string[];
+  price_from: number | null;
+  price_to: number | null;
+};
+
+export type BookingSettings = {
+  instant_enabled: boolean;
+  slot_minutes: number;
+  capacity: number;
+  min_notice_hours: number;
+  max_days_ahead: number;
+};
+
+export type VoucherSettings = {
+  enabled: boolean;
+  amounts: number[];
+  valid_months: number;
+  terms: string | null;
+};
+
+export type LoyaltyProgram = {
+  enabled: boolean;
+  stamps_required: number;
+  reward: string;
 };
 
 export type ListingStatus = "active" | "closed" | "hidden" | "archived";
@@ -92,6 +153,15 @@ export type ListingDetail = {
   hours: OpeningHours[];
   closures: Closure[];
   photos: Photo[];
+  staff: StaffMember[];
+  // Running today or later, soonest ending first.
+  promotions: Promotion[];
+  packages: ServicePackage[];
+  // Areas a home-service vendor travels to.
+  service_areas: Area[];
+  booking: BookingSettings | null;
+  vouchers: VoucherSettings | null;
+  loyalty: LoyaltyProgram | null;
 };
 
 export type ListingCard = {
@@ -106,6 +176,15 @@ export type ListingCard = {
   is_claimed: boolean;
   open_now: boolean;
   cover_path: string | null;
+  lat: number | null;
+  lng: number | null;
+  min_price: number | null;
+  max_price: number | null;
+  distance_km: number | null;
+  is_featured: boolean;
+  has_deal: boolean;
+  rating_avg: number | null;
+  rating_count: number;
   total_count: number;
 };
 
@@ -116,5 +195,12 @@ export type SearchParams = {
   attributes?: string[];
   gender?: "men" | "women";
   openNow?: boolean;
+  openLate?: boolean;
+  maxPrice?: number;
+  near?: { lat: number; lng: number };
+  radiusKm?: number;
+  sort?: "distance" | "price";
+  slugs?: string[];
   page?: number;
+  pageSize?: number;
 };

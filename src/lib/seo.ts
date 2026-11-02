@@ -50,7 +50,10 @@ export function itemListJsonLd(name: string, items: { name: string; path: string
   };
 }
 
-export function listingJsonLd(listing: ListingDetail): JsonLd {
+export function listingJsonLd(
+  listing: ListingDetail,
+  rating: { average: number | null; count: number } | null = null,
+): JsonLd {
   const primary = listing.categories[0];
   const city = listing.area_path.find((a) => a.type === "city");
   const services = listing.services_are_template ? [] : listing.services;
@@ -85,7 +88,18 @@ export function listingJsonLd(listing: ListingDetail): JsonLd {
       closes: hhmm(h.closes),
     })),
     sameAs: [listing.website, listing.instagram, listing.facebook].filter(Boolean),
-    makesOffer: services.map((s) => ({
+    aggregateRating:
+      rating && rating.count > 0 && rating.average !== null
+        ? { "@type": "AggregateRating", ratingValue: rating.average, reviewCount: rating.count, bestRating: 5, worstRating: 1 }
+        : undefined,
+    employee: listing.staff.length
+      ? listing.staff.map((s) => ({ "@type": "Person", name: s.name, jobTitle: s.title ?? undefined }))
+      : undefined,
+    areaServed: listing.service_areas.length
+      ? listing.service_areas.map((a) => ({ "@type": "Place", name: a.name }))
+      : undefined,
+    makesOffer: [
+      ...services.map((s) => ({
       "@type": "Offer",
       itemOffered: { "@type": "Service", name: s.name },
       priceSpecification:
@@ -97,7 +111,28 @@ export function listingJsonLd(listing: ListingDetail): JsonLd {
               maxPrice: s.price_to !== null ? Number(s.price_to) : undefined,
             }
           : undefined,
-    })),
+      })),
+      ...listing.packages.map((p) => ({
+        "@type": "Offer",
+        itemOffered: { "@type": "Service", name: p.name, description: p.description ?? undefined },
+        priceSpecification:
+          p.price_from !== null
+            ? {
+                "@type": "PriceSpecification",
+                priceCurrency: "MYR",
+                minPrice: p.price_from,
+                maxPrice: p.price_to ?? undefined,
+              }
+            : undefined,
+      })),
+      ...listing.promotions.map((p) => ({
+        "@type": "Offer",
+        name: p.title,
+        description: p.details ?? undefined,
+        validFrom: p.starts_on,
+        validThrough: p.ends_on,
+      })),
+    ],
   };
 }
 

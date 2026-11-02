@@ -2,12 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { ListingGrid } from "@/components/listing-card";
+import { MapView } from "@/components/map-view";
 import { SearchFilters } from "@/components/search-filters";
 import { PAGE_SIZE, getAreas, getAttributes, getCategories, searchListings } from "@/lib/data/directory";
+import { getFeatureSettings } from "@/lib/data/features";
 import { alternatesFor, fmt } from "@/lib/i18n/config";
 import { areaName, categoryName } from "@/lib/i18n/names";
 import { getI18n } from "@/lib/i18n/server";
-import type { SearchParams } from "@/lib/types";
+import { type RawParams, parseSearchParams, searchQueryString } from "@/lib/search-params";
 
 // Filtered views are for people, not search engines; the area and category
 // hub pages are the indexable versions.
@@ -20,22 +22,7 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-type RawParams = Record<string, string | string[] | undefined>;
-
-function parseParams(raw: RawParams): SearchParams {
-  const one = (k: string) => (Array.isArray(raw[k]) ? raw[k][0] : raw[k]) ?? undefined;
-  const many = (k: string) => (Array.isArray(raw[k]) ? raw[k] : raw[k] ? [raw[k]] : []);
-  const gender = one("for");
-  return {
-    q: one("q")?.slice(0, 100),
-    category: one("category"),
-    area: one("area"),
-    attributes: many("attr").slice(0, 10),
-    gender: gender === "men" || gender === "women" ? gender : undefined,
-    openNow: one("open") === "1",
-    page: Number(one("page")) || 1,
-  };
-}
+const MAP_LIMIT = 200;
 
 export default async function SearchPage({ searchParams }: PageProps<"/[lang]/search">) {
   const [categories, areas, attributes, { t }] = await Promise.all([
@@ -62,50 +49,67 @@ export default async function SearchPage({ searchParams }: PageProps<"/[lang]/se
 }
 
 async function Results({ searchParams }: { searchParams: Promise<RawParams> }) {
-  const params = parseParams(await searchParams);
-  const [categories, areas, { items, total }, { locale, t, href }] = await Promise.all([
+  const params = parseSearchParams(await searchParams);
+  const isMap = params.view === "map";
+  const [categories, areas, { items, total }, features, { locale, t, href: localHref }] = await Promise.all([
     getCategories(),
     getAreas(),
-    searchListings(params),
+    searchListings(isMap ? { ...params, page: 1, pageSize: MAP_LIMIT } : params),
+    getFeatureSettings(),
     getI18n(),
   ]);
   const area = areas.find((a) => a.slug === params.area);
   const category = categories.find((c) => c.slug === params.category);
   const page = params.page ?? 1;
-  const pages = Math.ceil(total / PAGE_SIZE);
-
-  const pageHref = (p: number) => {
-    const qs = new URLSearchParams();
-    if (params.q) qs.set("q", params.q);
-    if (params.category) qs.set("category", params.category);
-    if (params.area) qs.set("area", params.area);
-    params.attributes?.forEach((a) => qs.append("attr", a));
-    if (params.gender) qs.set("for", params.gender);
-    if (params.openNow) qs.set("open", "1");
-    qs.set("page", String(p));
-    return href(`/search?${qs.toString()}`);
-  };
+  const pages = isMap ? 1 : Math.ceil(total / PAGE_SIZE);
+  const href = (changes: Record<string, string | null>) => localHref(`/search?${searchQueryString(params, changes)}`);
+  const g = t.growth.search;
 
   return (
     <>
-      <p className="mb-4 text-sm text-muted">
-        {total === 1 ? t.search.countOne : fmt(t.search.countMany, { count: total })}
-        {category ? fmt(t.search.forCategory, { category: categoryName(category, locale).toLowerCase() }) : ""}
-        {fmt(t.search.inArea, { area: area ? areaName(area, locale) : t.common.klangValley })}
-      </p>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm text-muted">
+          {total === 1 ? t.search.countOne : fmt(t.search.countMany, { count: total })}
+          {category ? fmt(t.search.forCategory, { category: categoryName(category, locale).toLowerCase() }) : ""}
+          {params.near
+            ? fmt(g.withinKm, { km: params.radiusKm ?? 10 })
+            : fmt(t.search.inArea, { area: area ? areaName(area, locale) : t.common.klangValley })}
+        </p>
+        <div className="flex rounded-full border border-line bg-white p-0.5 text-sm" role="group" aria-label={g.view}>
+          <Link
+            href={href({ view: null, page: null })}
+            aria-current={!isMap ? "page" : undefined}
+            className={`rounded-full px-3 py-1 ${!isMap ? "bg-ink text-white" : ""}`}
+          >
+            {g.list}
+          </Link>
+          <Link
+            href={href({ view: "map", page: null })}
+            aria-current={isMap ? "page" : undefined}
+            className={`rounded-full px-3 py-1 ${isMap ? "bg-ink text-white" : ""}`}
+          >
+            {g.map}
+          </Link>
+        </div>
+      </div>
       {items.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-line bg-white p-10 text-center">
           <p className="font-medium">{t.search.noneTitle}</p>
-          <p className="mt-1 text-sm text-muted">{t.search.noneBody}</p>
+          <p className="mt-1 text-sm text-muted">{params.near ? g.noneNear : t.search.noneBody}</p>
         </div>
+      ) : isMap ? (
+        <MapView listings={items} center={params.near} />
       ) : (
-        <ListingGrid listings={items} categories={categories} />
+        <ListingGrid listings={items} categories={categories} showRatings={features.reviewsEnabled} />
+      )}
+      {isMap && total > items.length && (
+        <p className="mt-2 text-xs text-muted">{fmt(g.mapLimit, { count: items.length })}</p>
       )}
       {pages > 1 && (
         <nav className="mt-8 flex items-center justify-between text-sm" aria-label={t.search.pages}>
-          {page > 1 ? <Link href={pageHref(page - 1)} className="underline">{t.search.previous}</Link> : <span />}
+          {page > 1 ? <Link href={href({ page: String(page - 1) })} className="underline">{t.search.previous}</Link> : <span />}
           <span className="text-muted">{fmt(t.search.pageOf, { page, pages })}</span>
-          {page < pages ? <Link href={pageHref(page + 1)} className="underline">{t.search.next}</Link> : <span />}
+          {page < pages ? <Link href={href({ page: String(page + 1) })} className="underline">{t.search.next}</Link> : <span />}
         </nav>
       )}
     </>

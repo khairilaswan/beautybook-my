@@ -13,9 +13,19 @@ export function priceLabel(s: Pick<Service, "price_from" | "price_to">, locale: 
   const from = s.price_from === null ? null : Number(s.price_from);
   const to = s.price_to === null ? null : Number(s.price_to);
   if (from === null) return null;
-  const rm = (n: number) => `RM${Number.isInteger(n) ? n : n.toFixed(2)}`;
   if (to === null || to === from) return FROM[locale](rm(from));
   return `${rm(from)} – ${rm(to)}`;
+}
+
+export function rm(n: number): string {
+  return `RM${Number.isInteger(n) ? n : n.toFixed(2)}`;
+}
+
+// "RM60–90", "from RM60", or null when the shop has no prices yet.
+export function priceRangeLabel(min: number | null, max: number | null, locale: Locale = "en"): string | null {
+  if (min === null) return null;
+  if (max === null || max === min) return FROM[locale](rm(min));
+  return `${rm(min)}–${Number.isInteger(max) ? max : max.toFixed(2)}`;
 }
 
 export function priceLevelLabel(level: number | null): string | null {

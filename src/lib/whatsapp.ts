@@ -12,6 +12,8 @@ export type BookingMessage = {
   shortCode: string;
   // In the customer's language: they send it from their own WhatsApp.
   words: Dictionary["booking"]["message"];
+  // Already booked into a free slot; the message just lets the shop know.
+  confirmed?: boolean;
 };
 
 // The text the customer sends from their own WhatsApp. The link at the end
@@ -19,12 +21,12 @@ export type BookingMessage = {
 export function bookingMessage(m: BookingMessage): string {
   const w = m.words;
   const lines = [
-    fmt(w.greeting, { shop: m.shopName }),
+    fmt(m.confirmed ? w.greetingBooked : w.greeting, { shop: m.shopName }),
     fmt(w.service, { service: `${m.serviceName}${m.priceLabel ? ` (${m.priceLabel})` : ""}` }),
-    m.preferredLabel ? fmt(w.preferred, { time: m.preferredLabel }) : null,
+    m.preferredLabel ? fmt(m.confirmed ? w.time : w.preferred, { time: m.preferredLabel }) : null,
     fmt(w.name, { name: m.customerName }),
     m.note ? fmt(w.note, { note: m.note }) : null,
-    fmt(w.confirm, { url: `${siteUrl.replace(/^https?:\/\//, "")}/r/${m.shortCode}` }),
+    fmt(m.confirmed ? w.booking : w.confirm, { url: `${siteUrl.replace(/^https?:\/\//, "")}/r/${m.shortCode}` }),
   ];
   return lines.filter(Boolean).join("\n");
 }

@@ -26,6 +26,9 @@ const ATTRIBUTE_ZH: Record<string, string> = {
   "home-service": "上门服务",
   "walk-in": "欢迎直接上门",
   "appointment-only": "仅限预约",
+  "women-only": "仅限女性",
+  "muslim-friendly": "穆斯林友好",
+  "prayer-room": "祈祷室",
 };
 
 export function attributeName(a: Pick<Attribute, "slug" | "name_en" | "name_ms">, locale: Locale): string {

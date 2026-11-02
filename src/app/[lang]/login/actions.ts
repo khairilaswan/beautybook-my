@@ -5,6 +5,7 @@ import { siteUrl } from "@/lib/env";
 import { normalizeMalaysianPhone } from "@/lib/phone";
 import { localePath } from "@/lib/i18n/config";
 import { getActionI18n } from "@/lib/i18n/server";
+import { claimReferral } from "@/lib/referrals";
 import { safeNext } from "@/lib/safe-next";
 import { createClient } from "@/lib/supabase/server";
 
@@ -44,8 +45,9 @@ export async function verifyPhoneCode(prev: LoginState, form: FormData): Promise
   const phone = prev.phone;
   if (!phone || !/^[0-9]{6}$/.test(token)) return { ...prev, error: t.common.enterCode };
   const supabase = await createClient();
-  const { error } = await supabase.auth.verifyOtp({ phone: `+${phone}`, token, type: "sms" });
+  const { data, error } = await supabase.auth.verifyOtp({ phone: `+${phone}`, token, type: "sms" });
   if (error) return { ...prev, error: t.login.errors.badCode };
+  if (data.user) await claimReferral(data.user.id, data.user.created_at);
   redirect(await destination(String(form.get("next") ?? "")));
 }
 

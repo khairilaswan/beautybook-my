@@ -28,13 +28,18 @@ export default async function LoginPage({ searchParams }: PageProps<"/[lang]/log
 }
 
 async function Forms({ searchParams }: { searchParams: PageProps<"/[lang]/login">["searchParams"] }) {
-  const [params, { locale }] = await Promise.all([searchParams, getI18n()]);
+  const [params, { locale, t }] = await Promise.all([searchParams, getI18n()]);
   const next = safeNext(typeof params.next === "string" ? params.next : null, localePath(locale, "/account"));
   const error = typeof params.error === "string" ? params.error : null;
   const methods = await getLoginMethods();
   return (
     <>
       {error && <p role="alert" className="mb-4 rounded-xl bg-brand-50 p-3 text-sm text-brand-700">{error}</p>}
+      {params.invited && (
+        <p className="mb-4 rounded-xl bg-green-50 p-3 text-sm">
+          {t.growth.account.invited}
+        </p>
+      )}
       <LoginForms next={next} methods={methods} />
     </>
   );
