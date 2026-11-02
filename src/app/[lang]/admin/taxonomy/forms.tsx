@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { type ActionState, addArea, addCategory } from "@/app/admin/actions";
+import { type ActionState, addArea, addCategory } from "@/app/[lang]/admin/actions";
 
 const input = "rounded-xl border border-line bg-white px-3 py-2";
 

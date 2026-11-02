@@ -3,18 +3,24 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { ClaimForms } from "@/app/claim/[slug]/claim-forms";
+import { ClaimForms } from "@/app/[lang]/claim/[slug]/claim-forms";
 import { requireUser } from "@/lib/auth";
+import { fmt } from "@/lib/i18n/config";
+import { getI18n } from "@/lib/i18n/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { maskPhone } from "@/lib/phone";
 import { whatsAppCodesEnabled } from "@/lib/whatsapp-cloud";
 
-export const metadata: Metadata = { title: "Claim your business", robots: { index: false } };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.claim.metaTitle, robots: { index: false } };
+}
 
-export default function ClaimPage({ params, searchParams }: PageProps<"/claim/[slug]">) {
+export default async function ClaimPage({ params, searchParams }: PageProps<"/[lang]/claim/[slug]">) {
+  const { t } = await getI18n();
   return (
     <div className="mx-auto max-w-lg px-4 py-10">
-      <Suspense fallback={<p className="text-muted">Loading…</p>}>
+      <Suspense fallback={<p className="text-muted">{t.common.loading}</p>}>
         <Claim params={params} searchParams={searchParams} />
       </Suspense>
     </div>
@@ -25,12 +31,12 @@ async function Claim({
   params,
   searchParams,
 }: {
-  params: PageProps<"/claim/[slug]">["params"];
-  searchParams: PageProps<"/claim/[slug]">["searchParams"];
+  params: PageProps<"/[lang]/claim/[slug]">["params"];
+  searchParams: PageProps<"/[lang]/claim/[slug]">["searchParams"];
 }) {
   const { slug } = await params;
   const { existing } = await searchParams;
-  const user = await requireUser(`/claim/${slug}`);
+  const [user, { t, href }] = await Promise.all([requireUser(`/claim/${slug}`), getI18n()]);
 
   // Read with the service role: a business someone just added is hidden
   // until its number is verified, and it still needs a claim page.
@@ -50,25 +56,11 @@ async function Claim({
   return (
     <>
       <p className="text-sm text-muted">
-        <Link href={listingPath(listing.slug)} className="underline">{listing.name}</Link>
+        <Link href={href(listingPath(listing.slug))} className="underline">{listing.name}</Link>
       </p>
-      <h1 className="mt-1 text-2xl font-bold">Claim this business</h1>
-      {existing && (
-        <p className="mt-3 rounded-xl bg-brand-50 p-3 text-sm">
-          This number is already on BeautyBook as {listing.name}. Claim it below instead of adding it again.
-        </p>
-      )}
-      {(count ?? 0) > 0 ? (
-        <p className="mt-3 text-muted">
-          This business is already managed by its owner. If you are the owner and don&apos;t have access, send us
-          proof below and we&apos;ll review it.
-        </p>
-      ) : (
-        <p className="mt-3 text-muted">
-          Claiming is free. You&apos;ll be able to update your menu, prices, hours and photos, and see every booking
-          request.
-        </p>
-      )}
+      <h1 className="mt-1 text-2xl font-bold">{t.claim.title}</h1>
+      {existing && <p className="mt-3 rounded-xl bg-brand-50 p-3 text-sm">{fmt(t.claim.existing, { name: listing.name })}</p>}
+      <p className="mt-3 text-muted">{(count ?? 0) > 0 ? t.claim.managed : t.claim.free}</p>
       <div className="mt-8">
         <ClaimForms
           listingId={listing.id}

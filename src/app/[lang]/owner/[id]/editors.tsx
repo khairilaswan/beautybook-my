@@ -9,7 +9,7 @@ import {
   saveHours,
   saveServices,
   updateListingDetails,
-} from "@/app/owner/actions";
+} from "@/app/[lang]/owner/actions";
 import { photoUrl } from "@/lib/format";
 import { WEEKDAYS, hhmm } from "@/lib/hours";
 import { uploadFile } from "@/lib/supabase/browser";

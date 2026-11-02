@@ -7,7 +7,9 @@ import {
   sendPhoneCode,
   signInWithProvider,
   verifyPhoneCode,
-} from "@/app/login/actions";
+} from "@/app/[lang]/login/actions";
+import { useI18n } from "@/lib/i18n/client";
+import { fmt } from "@/lib/i18n/config";
 import type { LoginMethods } from "@/lib/login-methods";
 
 const input = "mt-1 w-full rounded-xl border border-line bg-white px-3 py-2";
@@ -18,6 +20,7 @@ export function LoginForms({ next, methods }: { next: string; methods: LoginMeth
     {},
   );
   const [emailState, emailAction, emailPending] = useActionState<LoginState, FormData>(sendEmailLink, {});
+  const { t } = useI18n();
 
   return (
     <div className="space-y-6">
@@ -30,7 +33,7 @@ export function LoginForms({ next, methods }: { next: string; methods: LoginMeth
                 onClick={() => signInWithProvider("google", next)}
                 className="rounded-xl border border-line bg-white px-4 py-3 font-medium hover:border-ink"
               >
-                Continue with Google
+                {t.login.google}
               </button>
             )}
             {methods.facebook && (
@@ -39,13 +42,13 @@ export function LoginForms({ next, methods }: { next: string; methods: LoginMeth
                 onClick={() => signInWithProvider("facebook", next)}
                 className="rounded-xl border border-line bg-white px-4 py-3 font-medium hover:border-ink"
               >
-                Continue with Facebook
+                {t.login.facebook}
               </button>
             )}
           </div>
 
           <div className="flex items-center gap-3 text-sm text-muted">
-            <span className="h-px flex-1 bg-line" /> or <span className="h-px flex-1 bg-line" />
+            <span className="h-px flex-1 bg-line" /> {t.login.or} <span className="h-px flex-1 bg-line" />
           </div>
         </>
       )}
@@ -55,18 +58,18 @@ export function LoginForms({ next, methods }: { next: string; methods: LoginMeth
           <input type="hidden" name="next" value={next} />
           {phoneState.step === "code" ? (
             <label className="block text-sm">
-              <span className="font-medium">Code sent to +{phoneState.phone}</span>
+              <span className="font-medium">{fmt(t.login.codeSentTo, { phone: phoneState.phone ?? "" })}</span>
               <input name="code" inputMode="numeric" autoComplete="one-time-code" maxLength={6} required className={input} />
             </label>
           ) : (
             <label className="block text-sm">
-              <span className="font-medium">Mobile number</span>
+              <span className="font-medium">{t.login.mobile}</span>
               <input name="phone" type="tel" placeholder="012-345 6789" autoComplete="tel" required className={input} />
             </label>
           )}
           {phoneState.error && <p role="alert" className="text-sm text-brand-700">{phoneState.error}</p>}
           <button disabled={phonePending} className="w-full rounded-xl bg-ink px-4 py-3 font-medium text-white disabled:opacity-60">
-            {phoneState.step === "code" ? "Sign in" : "Send code"}
+            {phoneState.step === "code" ? t.login.signIn : t.login.sendCode}
           </button>
         </form>
       )}
@@ -74,15 +77,15 @@ export function LoginForms({ next, methods }: { next: string; methods: LoginMeth
       <form action={emailAction} className="space-y-2">
         <input type="hidden" name="next" value={next} />
         <label className="block text-sm">
-          <span className="font-medium">{methods.phone ? "Or get a sign-in link by email" : "Get a sign-in link by email"}</span>
+          <span className="font-medium">{methods.phone ? t.login.emailOr : t.login.email}</span>
           <input name="email" type="email" autoComplete="email" required className={input} />
         </label>
         {emailState.error && <p role="alert" className="text-sm text-brand-700">{emailState.error}</p>}
         {emailState.emailSent ? (
-          <p className="text-sm text-whatsapp">Check your inbox for the sign-in link.</p>
+          <p className="text-sm text-whatsapp">{t.login.checkInbox}</p>
         ) : (
           <button disabled={emailPending} className="w-full rounded-xl border border-line bg-white px-4 py-3 font-medium disabled:opacity-60">
-            Email me a link
+            {t.login.emailMe}
           </button>
         )}
       </form>

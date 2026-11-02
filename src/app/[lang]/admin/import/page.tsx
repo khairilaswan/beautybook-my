@@ -1,4 +1,4 @@
-import { ImportTool, UndoButton } from "@/app/admin/import/import-tool";
+import { ImportTool, UndoButton } from "@/app/[lang]/admin/import/import-tool";
 import { requirePermission } from "@/lib/auth";
 import { getAreas, getAttributes, getCategories } from "@/lib/data/directory";
 import { formatDate } from "@/lib/format";

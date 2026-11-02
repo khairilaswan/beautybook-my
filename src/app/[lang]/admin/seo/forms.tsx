@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useTransition } from "react";
-import { type ActionState, addRedirect, deleteRedirect } from "@/app/admin/actions";
+import { type ActionState, addRedirect, deleteRedirect } from "@/app/[lang]/admin/actions";
 
 export function RedirectForm() {
   const [state, action, pending] = useActionState<ActionState, FormData>(addRedirect, {});

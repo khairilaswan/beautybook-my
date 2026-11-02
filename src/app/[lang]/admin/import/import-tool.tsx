@@ -3,7 +3,7 @@
 import Papa from "papaparse";
 import { readSheet } from "read-excel-file/universal";
 import { useState, useTransition } from "react";
-import { commitImport, type PreviewRow, previewImport, undoImport } from "@/app/admin/actions";
+import { commitImport, type PreviewRow, previewImport, undoImport } from "@/app/[lang]/admin/actions";
 import { IMPORT_COLUMNS, IMPORT_EXAMPLE, MAX_IMPORT_ROWS } from "@/lib/import";
 
 type Rows = Record<string, string>[];

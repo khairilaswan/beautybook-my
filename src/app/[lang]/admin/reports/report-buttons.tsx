@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
-import { resolveReport, setListingStatus } from "@/app/admin/actions";
+import { resolveReport, setListingStatus } from "@/app/[lang]/admin/actions";
 
 export function ReportButtons({ reportId, listingId, reason }: { reportId: number; listingId: string | null; reason: string }) {
   const [pending, start] = useTransition();

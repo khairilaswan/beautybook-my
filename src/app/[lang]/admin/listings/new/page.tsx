@@ -1,4 +1,4 @@
-import { ListingForm } from "@/app/admin/listings/listing-form";
+import { ListingForm } from "@/app/[lang]/admin/listings/listing-form";
 import { requirePermission } from "@/lib/auth";
 import { getAreas, getAttributes, getCategories } from "@/lib/data/directory";
 import { Suspense } from "react";

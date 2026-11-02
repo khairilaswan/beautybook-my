@@ -22,7 +22,7 @@ function changedFields(e: Entry): string[] {
 
 // Auth runs inside Suspense so client navigations between admin pages stream
 // instead of blocking.
-export default function Page(props: PageProps<"/admin/audit">) {
+export default function Page(props: PageProps<"/[lang]/admin/audit">) {
   return (
     <Suspense fallback={<p className="text-muted">Loading…</p>}>
       <AuditPage {...props} />
@@ -30,7 +30,7 @@ export default function Page(props: PageProps<"/admin/audit">) {
   );
 }
 
-async function AuditPage({ searchParams }: PageProps<"/admin/audit">) {
+async function AuditPage({ searchParams }: PageProps<"/[lang]/admin/audit">) {
   await requirePermission("audit.view");
   const { table, record } = await searchParams;
   const supabase = await createClient();

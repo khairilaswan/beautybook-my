@@ -1,4 +1,4 @@
-import { AddAreaForm, AddCategoryForm } from "@/app/admin/taxonomy/forms";
+import { AddAreaForm, AddCategoryForm } from "@/app/[lang]/admin/taxonomy/forms";
 import { requirePermission } from "@/lib/auth";
 import { getAreas, getCategories } from "@/lib/data/directory";
 import { Suspense } from "react";

@@ -1,4 +1,3 @@
-import { listingPath } from "@/lib/paths";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Breadcrumbs } from "@/components/breadcrumbs";
@@ -15,11 +14,20 @@ import {
   searchListings,
 } from "@/lib/data/directory";
 import { hubFaqs, hubSummary } from "@/lib/hub";
+import { fmt } from "@/lib/i18n/config";
+import { areaName, categoryName } from "@/lib/i18n/names";
+import { getI18n } from "@/lib/i18n/server";
+import { hubPath, listingPath } from "@/lib/paths";
 import { breadcrumbJsonLd, faqJsonLd, itemListJsonLd } from "@/lib/seo";
 
 // Area page (/petaling-jaya) and area + category page (/petaling-jaya/barbershop).
 export async function HubPage({ areaSlug, categorySlug }: { areaSlug: string; categorySlug: string | null }) {
-  const [areas, categories, counts] = await Promise.all([getAreas(), getCategories(), getHubCounts()]);
+  const [areas, categories, counts, { locale, t, href }] = await Promise.all([
+    getAreas(),
+    getCategories(),
+    getHubCounts(),
+    getI18n(),
+  ]);
   const area = areas.find((a) => a.slug === areaSlug);
   const category = categorySlug ? categories.find((c) => c.slug === categorySlug) : null;
   if (!area || (categorySlug && !category)) notFound();
@@ -30,13 +38,19 @@ export async function HubPage({ areaSlug, categorySlug }: { areaSlug: string; ca
   ]);
 
   const path = areaPath(areas, area);
+  const placeName = areaName(area, locale);
+  const catName = category ? categoryName(category, locale) : null;
   const crumbs = [
-    { name: "Home", path: "/" },
-    ...path.filter((a) => a.type !== "state").map((a) => ({ name: a.name, path: `/${a.slug}` })),
-    ...(category ? [{ name: category.name_en, path: `/${area.slug}/${category.slug}` }] : []),
+    { name: t.nav.home, path: href("/") },
+    ...path
+      .filter((a) => a.type !== "state")
+      .map((a) => ({ name: areaName(a, locale), path: href(hubPath(a.slug)) })),
+    ...(category && catName ? [{ name: catName, path: href(hubPath(area.slug, category.slug)) }] : []),
   ];
-  const title = category ? `${category.name_en} in ${area.name}` : `Salons, barbers and beauty in ${area.name}`;
-  const faqs = hubFaqs(area, category ?? null, stats);
+  const title = catName
+    ? fmt(t.hub.titleCategory, { category: catName, area: placeName })
+    : fmt(t.hub.titleArea, { area: placeName });
+  const faqs = hubFaqs(area, category ?? null, stats, locale);
   const nearby = nearbyAreas(areas, area)
     .map((a) => ({ area: a, count: countInTree(areas, counts, a.slug, category?.slug ?? null) }))
     .filter((n) => n.count > 0);
@@ -49,24 +63,24 @@ export async function HubPage({ areaSlug, categorySlug }: { areaSlug: string; ca
       <JsonLd
         data={[
           breadcrumbJsonLd(crumbs),
-          itemListJsonLd(title, items.map((l) => ({ name: l.name, path: listingPath(l.slug) }))),
+          itemListJsonLd(title, items.map((l) => ({ name: l.name, path: href(listingPath(l.slug)) }))),
           faqJsonLd(faqs),
         ]}
       />
       <Breadcrumbs items={crumbs} />
       <h1 className="mt-3 text-3xl font-bold tracking-tight">{title}</h1>
-      {category && <p className="text-muted">{category.name_ms} di {area.name}</p>}
-      <p className="mt-3 max-w-3xl text-lg">{hubSummary(area, category ?? null, stats)}</p>
+      {category && locale === "en" && <p className="text-muted">{category.name_ms} di {area.name}</p>}
+      <p className="mt-3 max-w-3xl text-lg">{hubSummary(area, category ?? null, stats, locale)}</p>
 
       {categoryLinks.length > 0 && (
         <ul className="mt-6 flex flex-wrap gap-2 text-sm">
           {categoryLinks.map(({ category: c, count }) => (
             <li key={c.slug}>
               <Link
-                href={`/${area.slug}/${c.slug}`}
+                href={href(hubPath(area.slug, c.slug))}
                 className="inline-block rounded-full border border-line bg-white px-3 py-1.5 hover:border-brand-200"
               >
-                {c.name_en} <span className="text-muted">({count})</span>
+                {categoryName(c, locale)} <span className="text-muted">({count})</span>
               </Link>
             </li>
           ))}
@@ -78,16 +92,16 @@ export async function HubPage({ areaSlug, categorySlug }: { areaSlug: string; ca
           <ListingGrid listings={items} categories={categories} />
         ) : (
           <p className="rounded-2xl border border-dashed border-line bg-white p-10 text-center text-muted">
-            No shops listed here yet. Know one? <Link href="/for-business" className="underline">Add it</Link>.
+            {t.hub.empty} <Link href={href("/for-business")} className="underline">{t.hub.addIt}</Link>.
           </p>
         )}
         {total > items.length && (
           <p className="mt-6 text-center">
             <Link
-              href={`/search?area=${area.slug}${category ? `&category=${category.slug}` : ""}&page=2`}
+              href={href(`/search?area=${area.slug}${category ? `&category=${category.slug}` : ""}&page=2`)}
               className="rounded-full border border-line bg-white px-4 py-2 hover:border-brand-200"
             >
-              See all {total}
+              {fmt(t.hub.seeAll, { count: total })}
             </Link>
           </p>
         )}
@@ -96,16 +110,16 @@ export async function HubPage({ areaSlug, categorySlug }: { areaSlug: string; ca
       {nearby.length > 0 && (
         <section className="mt-12">
           <h2 className="text-xl font-semibold">
-            {category ? `${category.name_en} nearby` : `Areas in and around ${area.name}`}
+            {catName ? fmt(t.hub.nearbyCategory, { category: catName }) : fmt(t.hub.nearbyArea, { area: placeName })}
           </h2>
           <ul className="mt-3 flex flex-wrap gap-2 text-sm">
             {nearby.map(({ area: a, count }) => (
               <li key={a.slug}>
                 <Link
-                  href={category ? `/${a.slug}/${category.slug}` : `/${a.slug}`}
+                  href={href(hubPath(a.slug, category?.slug))}
                   className="inline-block rounded-full border border-line bg-white px-3 py-1.5 hover:border-brand-200"
                 >
-                  {a.name} <span className="text-muted">({count})</span>
+                  {areaName(a, locale)} <span className="text-muted">({count})</span>
                 </Link>
               </li>
             ))}
@@ -114,7 +128,7 @@ export async function HubPage({ areaSlug, categorySlug }: { areaSlug: string; ca
       )}
 
       <section className="mt-12 max-w-3xl">
-        <h2 className="text-xl font-semibold">Questions</h2>
+        <h2 className="text-xl font-semibold">{t.hub.questions}</h2>
         <dl className="mt-3 divide-y divide-line rounded-2xl border border-line bg-white">
           {faqs.map((f) => (
             <div key={f.question} className="p-4">

@@ -1,4 +1,3 @@
-import { listingPath } from "@/lib/paths";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -11,46 +10,57 @@ import { OpenStatus } from "@/components/open-status";
 import { ShopUserTools } from "@/components/shop-user-tools";
 import { getListing, getRedirect } from "@/lib/data/directory";
 import { getShopTheme, getSiteSettings } from "@/lib/data/site-theme";
-import { GENDER_LABELS, formatDate, photoUrl, priceLabel, priceLevelLabel } from "@/lib/format";
+import { formatDate, photoUrl, priceLabel, priceLevelLabel } from "@/lib/format";
 import { weeklySchedule } from "@/lib/hours";
+import { alternatesFor, fmt } from "@/lib/i18n/config";
+import { areaName, attributeName, categoryName, serviceName } from "@/lib/i18n/names";
+import { getI18n } from "@/lib/i18n/server";
+import { hubPath, listingPath } from "@/lib/paths";
 import { formatMalaysianPhone } from "@/lib/phone";
 import { breadcrumbJsonLd, listingJsonLd } from "@/lib/seo";
 import type { ListingDetail } from "@/lib/types";
 
-async function loadListing(slug: string): Promise<ListingDetail> {
+async function loadListing(slug: string, href: (path: string) => string): Promise<ListingDetail> {
   const listing = await getListing(slug);
   if (listing) return listing;
   const to = await getRedirect(listingPath(slug));
-  if (to) permanentRedirect(to);
+  if (to) permanentRedirect(href(to));
   notFound();
 }
 
-export async function generateMetadata({ params }: PageProps<"/salon/[slug]">): Promise<Metadata> {
-  const { slug } = await params;
+export async function generateMetadata({ params }: PageProps<"/[lang]/salon/[slug]">): Promise<Metadata> {
+  const [{ slug }, { locale, t }] = await Promise.all([params, getI18n()]);
   const listing = await getListing(slug);
-  if (!listing) return { title: "Shop not found", robots: { index: false } };
+  if (!listing) return { title: t.shop.notFound, robots: { index: false } };
   const category = listing.categories[0];
-  const where = listing.area?.name ?? "Klang Valley";
-  const title = `${listing.name}, ${category?.name_en ?? "beauty"} in ${where}`;
+  const where = listing.area ? areaName(listing.area, locale) : t.common.klangValley;
+  const catName = category ? categoryName(category, locale) : null;
+  const title = fmt(t.shop.metaTitle, { name: listing.name, category: catName ?? t.shop.beauty, area: where });
+  // The shop's own description is in whatever language the owner wrote it.
   const description =
     listing.description?.slice(0, 155) ??
-    `${listing.name} is a ${category?.name_en.toLowerCase() ?? "beauty shop"} in ${where}. See services, prices and opening hours, then book on WhatsApp.`;
+    fmt(t.shop.metaDescription, {
+      name: listing.name,
+      category: catName?.toLowerCase() ?? t.shop.beautyShop,
+      area: where,
+    });
   const cover = listing.photos[0];
+  const alternates = alternatesFor(locale, listingPath(listing.slug));
   return {
     title,
     description,
-    alternates: { canonical: listingPath(listing.slug) },
+    alternates,
     openGraph: {
       title,
       description,
-      url: listingPath(listing.slug),
+      url: alternates.canonical,
       images: cover ? [{ url: photoUrl(cover.storage_path) }] : undefined,
     },
     robots: listing.status === "active" ? undefined : { index: false },
   };
 }
 
-export default function ShopPage({ params }: PageProps<"/salon/[slug]">) {
+export default function ShopPage({ params }: PageProps<"/[lang]/salon/[slug]">) {
   return (
     <Suspense fallback={<div className="mx-auto h-96 max-w-6xl animate-pulse px-4 py-8" />}>
       <Shop params={params} />
@@ -58,20 +68,24 @@ export default function ShopPage({ params }: PageProps<"/salon/[slug]">) {
   );
 }
 
-async function Shop({ params }: { params: PageProps<"/salon/[slug]">["params"] }) {
-  const { slug } = await params;
-  const [listing, { ownerThemes }] = await Promise.all([loadListing(slug), getSiteSettings()]);
+async function Shop({ params }: { params: PageProps<"/[lang]/salon/[slug]">["params"] }) {
+  const [{ slug }, { locale, t, href }] = await Promise.all([params, getI18n()]);
+  const [listing, { ownerThemes }] = await Promise.all([loadListing(slug, href), getSiteSettings()]);
   const shopTheme = ownerThemes ? await getShopTheme(listing.slug) : null;
   const category = listing.categories[0];
   const crumbs = [
-    { name: "Home", path: "/" },
-    ...listing.area_path.filter((a) => a.type !== "state").map((a) => ({ name: a.name, path: `/${a.slug}` })),
-    ...(category && listing.area ? [{ name: category.name_en, path: `/${listing.area.slug}/${category.slug}` }] : []),
-    { name: listing.name, path: listingPath(listing.slug) },
+    { name: t.nav.home, path: href("/") },
+    ...listing.area_path
+      .filter((a) => a.type !== "state")
+      .map((a) => ({ name: areaName(a, locale), path: href(hubPath(a.slug)) })),
+    ...(category && listing.area
+      ? [{ name: categoryName(category, locale), path: href(hubPath(listing.area.slug, category.slug)) }]
+      : []),
+    { name: listing.name, path: href(listingPath(listing.slug)) },
   ];
   const waNumber = listing.whatsapp ?? (listing.phone?.startsWith("601") ? listing.phone : null);
   const isOpenForRequests = listing.status === "active" && !!waNumber;
-  const schedule = weeklySchedule(listing.hours);
+  const schedule = weeklySchedule(listing.hours, locale);
   const mapsQuery =
     listing.lat !== null && listing.lng !== null
       ? `${listing.lat},${listing.lng}`
@@ -83,21 +97,26 @@ async function Shop({ params }: { params: PageProps<"/salon/[slug]">["params"] }
       <Breadcrumbs items={crumbs} />
 
       {listing.status === "closed" && (
-        <p className="mt-4 rounded-xl bg-canvas p-3 text-sm font-medium">This shop has closed permanently.</p>
+        <p className="mt-4 rounded-xl bg-canvas p-3 text-sm font-medium">{t.shop.closedPermanently}</p>
       )}
 
       <div className="mt-4 flex flex-wrap items-start gap-3">
         <div className="min-w-0 flex-1">
           <h1 className="text-3xl font-bold tracking-tight">{listing.name}</h1>
           <p className="mt-1 text-muted">
-            {[listing.categories.map((c) => c.name_en).join(", "), listing.area?.name].filter(Boolean).join(" · ")}
+            {[
+              listing.categories.map((c) => categoryName(c, locale)).join(", "),
+              listing.area && areaName(listing.area, locale),
+            ]
+              .filter(Boolean)
+              .join(" · ")}
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
             <OpenStatus hours={listing.hours} closures={listing.closures} />
-            {listing.gender && <span className="rounded-full bg-white px-2.5 py-0.5">{GENDER_LABELS[listing.gender]}</span>}
+            {listing.gender && <span className="rounded-full bg-white px-2.5 py-0.5">{t.common.gender[listing.gender]}</span>}
             {listing.price_level && <span className="rounded-full bg-white px-2.5 py-0.5">{priceLevelLabel(listing.price_level)}</span>}
             {listing.is_claimed ? (
-              <span className="rounded-full bg-brand-50 px-2.5 py-0.5 text-brand-700">Managed by the owner</span>
+              <span className="rounded-full bg-brand-50 px-2.5 py-0.5 text-brand-700">{t.shop.managedByOwner}</span>
             ) : null}
           </div>
         </div>
@@ -115,7 +134,7 @@ async function Shop({ params }: { params: PageProps<"/salon/[slug]">["params"] }
             >
               <Image
                 src={photoUrl(p.storage_path)}
-                alt={p.alt ?? `${listing.name} photo ${i + 1}`}
+                alt={p.alt ?? fmt(t.shop.photoAlt, { name: listing.name, n: i + 1 })}
                 fill
                 priority={i === 0}
                 sizes={i === 0 ? "(min-width: 640px) 50vw, 100vw" : "25vw"}
@@ -130,57 +149,57 @@ async function Shop({ params }: { params: PageProps<"/salon/[slug]">["params"] }
         <div className="space-y-10">
           {listing.description && (
             <section>
-              <h2 className="text-xl font-semibold">About</h2>
+              <h2 className="text-xl font-semibold">{t.shop.about}</h2>
               <p className="mt-2 whitespace-pre-line">{listing.description}</p>
             </section>
           )}
 
           <section>
-            <h2 className="text-xl font-semibold">Services</h2>
+            <h2 className="text-xl font-semibold">{t.shop.services}</h2>
             {listing.services.length === 0 ? (
-              <p className="mt-2 text-muted">Ask the shop for their menu.</p>
+              <p className="mt-2 text-muted">{t.shop.askMenu}</p>
             ) : (
               <ul className="mt-3 divide-y divide-line rounded-2xl border border-line bg-white">
                 {listing.services.map((s) => (
                   <li key={s.id} className="flex items-baseline justify-between gap-4 p-4">
                     <span>
-                      {s.name}
-                      {s.duration_min && <span className="ml-2 text-sm text-muted">{s.duration_min} min</span>}
+                      {serviceName(s, locale)}
+                      {s.duration_min && (
+                        <span className="ml-2 text-sm text-muted">{fmt(t.common.minutes, { count: s.duration_min })}</span>
+                      )}
                     </span>
-                    <span className="shrink-0 text-sm font-medium">{priceLabel(s) ?? "Ask for price"}</span>
+                    <span className="shrink-0 text-sm font-medium">{priceLabel(s, locale) ?? t.common.askForPrice}</span>
                   </li>
                 ))}
               </ul>
             )}
             {listing.services_are_template && (
-              <p className="mt-2 text-sm text-muted">
-                Typical services for this kind of shop. The owner hasn&apos;t added their own menu yet.
-              </p>
+              <p className="mt-2 text-sm text-muted">{t.shop.templateNote}</p>
             )}
           </section>
 
           {listing.attributes.length > 0 && (
             <section>
-              <h2 className="text-xl font-semibold">Good to know</h2>
+              <h2 className="text-xl font-semibold">{t.shop.goodToKnow}</h2>
               <ul className="mt-3 flex flex-wrap gap-2 text-sm">
                 {listing.attributes.map((a) => (
-                  <li key={a.slug} className="rounded-full border border-line bg-white px-3 py-1">{a.name_en}</li>
+                  <li key={a.slug} className="rounded-full border border-line bg-white px-3 py-1">{attributeName(a, locale)}</li>
                 ))}
               </ul>
             </section>
           )}
 
           <section>
-            <h2 className="text-xl font-semibold">Opening hours</h2>
+            <h2 className="text-xl font-semibold">{t.shop.openingHours}</h2>
             {listing.hours.length === 0 ? (
-              <p className="mt-2 text-muted">Hours not listed yet. Message the shop to check.</p>
+              <p className="mt-2 text-muted">{t.shop.noHours}</p>
             ) : (
               <table className="mt-3 w-full max-w-md text-sm">
                 <tbody>
                   {schedule.map((d) => (
                     <tr key={d.weekday} className="border-b border-line last:border-0">
                       <th scope="row" className="py-2 text-left font-medium">{d.label}</th>
-                      <td className="py-2 text-right">{d.slots.length ? d.slots.join(", ") : "Closed"}</td>
+                      <td className="py-2 text-right">{d.slots.length ? d.slots.join(", ") : t.common.closed}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -190,8 +209,8 @@ async function Shop({ params }: { params: PageProps<"/salon/[slug]">["params"] }
               <ul className="mt-3 text-sm text-muted">
                 {listing.closures.map((c) => (
                   <li key={c.date_from}>
-                    Closed {formatDate(c.date_from)}
-                    {c.date_to !== c.date_from ? ` to ${formatDate(c.date_to)}` : ""}
+                    {fmt(t.shop.closedOn, { from: formatDate(c.date_from, locale) })}
+                    {c.date_to !== c.date_from ? fmt(t.shop.closedTo, { to: formatDate(c.date_to, locale) }) : ""}
                     {c.note ? ` (${c.note})` : ""}
                   </li>
                 ))}
@@ -200,11 +219,11 @@ async function Shop({ params }: { params: PageProps<"/salon/[slug]">["params"] }
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold">Location</h2>
+            <h2 className="text-xl font-semibold">{t.shop.location}</h2>
             {listing.address && <p className="mt-2">{[listing.address, listing.postcode].filter(Boolean).join(" ")}</p>}
             {listing.lat !== null && listing.lng !== null && (
               <iframe
-                title={`Map of ${listing.name}`}
+                title={fmt(t.shop.mapOf, { name: listing.name })}
                 className="mt-3 h-64 w-full rounded-2xl border border-line"
                 loading="lazy"
                 src={`https://www.openstreetmap.org/export/embed.html?bbox=${listing.lng - 0.004}%2C${listing.lat - 0.003}%2C${listing.lng + 0.004}%2C${listing.lat + 0.003}&layer=mapnik&marker=${listing.lat}%2C${listing.lng}`}
@@ -216,20 +235,20 @@ async function Shop({ params }: { params: PageProps<"/salon/[slug]">["params"] }
               rel="noopener noreferrer"
               className="mt-2 inline-block text-sm underline"
             >
-              Get directions
+              {t.shop.directions}
             </a>
           </section>
 
           <p className="text-sm text-muted">
-            {listing.last_verified_at && <>Details last checked {formatDate(listing.last_verified_at)}. </>}
-            <Link href={`${listingPath(listing.slug)}/report`} className="underline">Report a problem</Link>
+            {listing.last_verified_at && <>{fmt(t.shop.lastChecked, { date: formatDate(listing.last_verified_at, locale) })} </>}
+            <Link href={href(`${listingPath(listing.slug)}/report`)} className="underline">{t.shop.report}</Link>
           </p>
         </div>
 
         <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
           {isOpenForRequests ? (
             <div id="book" className="scroll-mt-20 rounded-2xl border border-line bg-white p-5 shadow-sm">
-              <h2 className="text-lg font-semibold">Request a booking</h2>
+              <h2 className="text-lg font-semibold">{t.shop.requestBooking}</h2>
               <div className="mt-3">
                 <BookingForm listingId={listing.id} services={listing.services} hours={listing.hours} />
               </div>
@@ -240,25 +259,23 @@ async function Shop({ params }: { params: PageProps<"/salon/[slug]">["params"] }
               href={`tel:+${listing.phone}`}
               className="flex w-full items-center justify-center rounded-xl border border-ink px-4 py-3 font-semibold hover:bg-white"
             >
-              Call {formatMalaysianPhone(listing.phone)}
+              {fmt(t.shop.call, { phone: formatMalaysianPhone(listing.phone) })}
             </a>
           )}
           <div className="flex flex-wrap gap-3 text-sm">
             {listing.instagram && <a href={listing.instagram} target="_blank" rel="noopener noreferrer nofollow" className="underline">Instagram</a>}
             {listing.facebook && <a href={listing.facebook} target="_blank" rel="noopener noreferrer nofollow" className="underline">Facebook</a>}
-            {listing.website && <a href={listing.website} target="_blank" rel="noopener noreferrer nofollow" className="underline">Website</a>}
+            {listing.website && <a href={listing.website} target="_blank" rel="noopener noreferrer nofollow" className="underline">{t.shop.website}</a>}
           </div>
           {!listing.is_claimed && listing.status === "active" && (
             <div className="rounded-2xl bg-ink p-5 text-white">
-              <p className="font-semibold">Is this your business?</p>
-              <p className="mt-1 text-sm text-white/75">
-                Claim it free to update your menu, hours and photos, and see every request.
-              </p>
+              <p className="font-semibold">{t.shop.yourBusiness}</p>
+              <p className="mt-1 text-sm text-white/75">{t.shop.claimPitch}</p>
               <Link
-                href={`/claim/${listing.slug}`}
+                href={href(`/claim/${listing.slug}`)}
                 className="mt-3 inline-block rounded-full bg-white px-4 py-2 text-sm font-medium text-ink"
               >
-                Claim this business
+                {t.shop.claimCta}
               </Link>
             </div>
           )}
@@ -270,7 +287,7 @@ async function Shop({ params }: { params: PageProps<"/salon/[slug]">["params"] }
           href="#book"
           className="fixed inset-x-4 bottom-4 z-20 rounded-xl bg-whatsapp px-4 py-3 text-center font-semibold text-white shadow-lg lg:hidden"
         >
-          Book on WhatsApp
+          {t.shop.bookWhatsApp}
         </a>
       )}
     </div>

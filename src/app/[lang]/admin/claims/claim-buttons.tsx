@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { reviewClaim } from "@/app/admin/actions";
+import { reviewClaim } from "@/app/[lang]/admin/actions";
 
 export function ClaimButtons({ claimId }: { claimId: number }) {
   const [pending, start] = useTransition();

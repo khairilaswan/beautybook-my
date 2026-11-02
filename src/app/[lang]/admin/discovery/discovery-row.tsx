@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { setDiscoveryStatus } from "@/app/admin/actions";
+import { setDiscoveryStatus } from "@/app/[lang]/admin/actions";
 
 export function DiscoveryRow({ placeId, term, cell, status }: { placeId: string; term: string; cell: string; status: string }) {
   const [pending, start] = useTransition();

@@ -4,15 +4,21 @@ import { Suspense } from "react";
 import { ListingGrid } from "@/components/listing-card";
 import { SearchFilters } from "@/components/search-filters";
 import { PAGE_SIZE, getAreas, getAttributes, getCategories, searchListings } from "@/lib/data/directory";
+import { alternatesFor, fmt } from "@/lib/i18n/config";
+import { areaName, categoryName } from "@/lib/i18n/names";
+import { getI18n } from "@/lib/i18n/server";
 import type { SearchParams } from "@/lib/types";
 
 // Filtered views are for people, not search engines; the area and category
 // hub pages are the indexable versions.
-export const metadata: Metadata = {
-  title: "Search salons, barbers and beauty shops",
-  robots: { index: false, follow: true },
-  alternates: { canonical: "/search" },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { locale, t } = await getI18n();
+  return {
+    title: t.search.metaTitle,
+    robots: { index: false, follow: true },
+    alternates: alternatesFor(locale, "/search"),
+  };
+}
 
 type RawParams = Record<string, string | string[] | undefined>;
 
@@ -31,12 +37,17 @@ function parseParams(raw: RawParams): SearchParams {
   };
 }
 
-export default async function SearchPage({ searchParams }: PageProps<"/search">) {
-  const [categories, areas, attributes] = await Promise.all([getCategories(), getAreas(), getAttributes()]);
+export default async function SearchPage({ searchParams }: PageProps<"/[lang]/search">) {
+  const [categories, areas, attributes, { t }] = await Promise.all([
+    getCategories(),
+    getAreas(),
+    getAttributes(),
+    getI18n(),
+  ]);
   return (
     <div className="mx-auto grid max-w-6xl gap-8 px-4 py-8 lg:grid-cols-[280px_1fr]">
       <aside>
-        <h1 className="mb-4 text-2xl font-bold">Explore</h1>
+        <h1 className="mb-4 text-2xl font-bold">{t.search.title}</h1>
         <Suspense>
           <SearchFilters categories={categories} areas={areas} attributes={attributes} />
         </Suspense>
@@ -52,10 +63,11 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
 
 async function Results({ searchParams }: { searchParams: Promise<RawParams> }) {
   const params = parseParams(await searchParams);
-  const [categories, areas, { items, total }] = await Promise.all([
+  const [categories, areas, { items, total }, { locale, t, href }] = await Promise.all([
     getCategories(),
     getAreas(),
     searchListings(params),
+    getI18n(),
   ]);
   const area = areas.find((a) => a.slug === params.area);
   const category = categories.find((c) => c.slug === params.category);
@@ -71,29 +83,29 @@ async function Results({ searchParams }: { searchParams: Promise<RawParams> }) {
     if (params.gender) qs.set("for", params.gender);
     if (params.openNow) qs.set("open", "1");
     qs.set("page", String(p));
-    return `/search?${qs.toString()}`;
+    return href(`/search?${qs.toString()}`);
   };
 
   return (
     <>
       <p className="mb-4 text-sm text-muted">
-        {total} {total === 1 ? "shop" : "shops"}
-        {category ? ` for ${category.name_en.toLowerCase()}` : ""}
-        {area ? ` in ${area.name}` : " in Klang Valley"}
+        {total === 1 ? t.search.countOne : fmt(t.search.countMany, { count: total })}
+        {category ? fmt(t.search.forCategory, { category: categoryName(category, locale).toLowerCase() }) : ""}
+        {fmt(t.search.inArea, { area: area ? areaName(area, locale) : t.common.klangValley })}
       </p>
       {items.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-line bg-white p-10 text-center">
-          <p className="font-medium">No shops match these filters yet.</p>
-          <p className="mt-1 text-sm text-muted">Try a nearby area or remove a filter.</p>
+          <p className="font-medium">{t.search.noneTitle}</p>
+          <p className="mt-1 text-sm text-muted">{t.search.noneBody}</p>
         </div>
       ) : (
         <ListingGrid listings={items} categories={categories} />
       )}
       {pages > 1 && (
-        <nav className="mt-8 flex items-center justify-between text-sm" aria-label="Pages">
-          {page > 1 ? <Link href={pageHref(page - 1)} className="underline">Previous</Link> : <span />}
-          <span className="text-muted">Page {page} of {pages}</span>
-          {page < pages ? <Link href={pageHref(page + 1)} className="underline">Next</Link> : <span />}
+        <nav className="mt-8 flex items-center justify-between text-sm" aria-label={t.search.pages}>
+          {page > 1 ? <Link href={pageHref(page - 1)} className="underline">{t.search.previous}</Link> : <span />}
+          <span className="text-muted">{fmt(t.search.pageOf, { page, pages })}</span>
+          {page < pages ? <Link href={pageHref(page + 1)} className="underline">{t.search.next}</Link> : <span />}
         </nav>
       )}
     </>

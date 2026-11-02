@@ -20,7 +20,7 @@ const NAV = [
   { href: "/admin/audit", label: "Audit log", perm: "audit.view" },
 ] as const;
 
-export default function AdminLayout({ children }: LayoutProps<"/admin">) {
+export default function AdminLayout({ children }: LayoutProps<"/[lang]/admin">) {
   return (
     <div className="mx-auto grid max-w-7xl gap-6 px-4 py-6 lg:grid-cols-[200px_1fr]">
       <Suspense fallback={<nav />}>

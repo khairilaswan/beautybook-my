@@ -1,9 +1,9 @@
 import { listingPath } from "@/lib/paths";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ListingAdminTools } from "@/app/admin/listings/[id]/tools";
-import { type AdminListing, ListingForm } from "@/app/admin/listings/listing-form";
-import { HoursEditor, PhotoManager, ServicesEditor } from "@/app/owner/[id]/editors";
+import { ListingAdminTools } from "@/app/[lang]/admin/listings/[id]/tools";
+import { type AdminListing, ListingForm } from "@/app/[lang]/admin/listings/listing-form";
+import { HoursEditor, PhotoManager, ServicesEditor } from "@/app/[lang]/owner/[id]/editors";
 import { requirePermission } from "@/lib/auth";
 import { getAreas, getAttributes, getCategories } from "@/lib/data/directory";
 import { formatDate } from "@/lib/format";
@@ -12,7 +12,7 @@ import { Suspense } from "react";
 
 // Auth runs inside Suspense so client navigations between admin pages stream
 // instead of blocking.
-export default function Page(props: PageProps<"/admin/listings/[id]">) {
+export default function Page(props: PageProps<"/[lang]/admin/listings/[id]">) {
   return (
     <Suspense fallback={<p className="text-muted">Loading…</p>}>
       <EditListingPage {...props} />
@@ -20,7 +20,7 @@ export default function Page(props: PageProps<"/admin/listings/[id]">) {
   );
 }
 
-async function EditListingPage({ params, searchParams }: PageProps<"/admin/listings/[id]">) {
+async function EditListingPage({ params, searchParams }: PageProps<"/[lang]/admin/listings/[id]">) {
   await requirePermission("listings.edit");
   const { id } = await params;
   const { created } = await searchParams;

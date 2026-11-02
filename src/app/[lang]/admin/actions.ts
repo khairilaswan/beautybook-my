@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath, updateTag } from "next/cache";
+import { revalidateLocalized } from "@/lib/i18n/server";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { type Permission, requirePermission } from "@/lib/auth";
@@ -24,7 +25,7 @@ async function staffClient(perm: Permission) {
 function refreshListing(slug?: string) {
   if (slug) updateTag(tags.listing(slug));
   updateTag(tags.listings);
-  revalidatePath("/admin", "layout");
+  revalidateLocalized("/admin", "layout");
 }
 
 export type ActionState = { error?: string; message?: string };
@@ -384,7 +385,7 @@ export async function commitImport(
 
   await supabase.from("import_batches").update({ counts }).eq("id", batch.id);
   updateTag(tags.listings);
-  revalidatePath("/admin", "layout");
+  revalidateLocalized("/admin", "layout");
   return { batchId: batch.id, counts };
 }
 
@@ -412,7 +413,7 @@ export async function undoImport(batchId: number): Promise<ActionState> {
   }
   await supabase.from("import_batches").update({ status: "undone", undone_at: new Date().toISOString() }).eq("id", batchId);
   updateTag(tags.listings);
-  revalidatePath("/admin", "layout");
+  revalidateLocalized("/admin", "layout");
   return { message: "Import undone." };
 }
 
@@ -453,7 +454,7 @@ export async function resolveReport(reportId: number, outcome: "resolved" | "dis
     .from("reports")
     .update({ status: outcome, resolved_by: user.id, resolved_at: new Date().toISOString() })
     .eq("id", reportId);
-  revalidatePath("/admin", "layout");
+  revalidateLocalized("/admin", "layout");
 }
 
 // ---------------------------------------------------------------------------
@@ -468,7 +469,7 @@ export async function setMemberAccess(userId: string, status: "approved" | "reje
     .update({ status, decided_by: user.id, decided_at: new Date().toISOString() })
     .eq("user_id", userId)
     .select("user_id");
-  revalidatePath("/admin", "layout");
+  revalidateLocalized("/admin", "layout");
   if (error || !data?.length) return { error: "Could not change this member." };
   return { message: status === "approved" ? "Approved." : "Access removed." };
 }
@@ -497,21 +498,21 @@ export async function addStaff(_prev: ActionState, form: FormData): Promise<Acti
       error: error.code === "42501" ? "Only an Owner can give someone the Owner role." : "Could not add this person.",
     };
   }
-  revalidatePath("/admin/staff");
+  revalidateLocalized("/admin/staff");
   return { message: `${email} added.` };
 }
 
 export async function changeStaffRole(userId: string, roleId: number): Promise<ActionState> {
   const { supabase } = await staffClient("staff.manage");
   const { error } = await supabase.from("staff").update({ role_id: roleId }).eq("user_id", userId);
-  revalidatePath("/admin/staff");
+  revalidateLocalized("/admin/staff");
   return error ? { error: "Only an Owner can grant or remove the Owner role." } : { message: "Role changed." };
 }
 
 export async function removeStaff(userId: string): Promise<ActionState> {
   const { supabase } = await staffClient("staff.manage");
   const { error } = await supabase.from("staff").delete().eq("user_id", userId);
-  revalidatePath("/admin/staff");
+  revalidateLocalized("/admin/staff");
   return error ? { error: error.message.includes("yourself") ? "You can't remove yourself." : "Only an Owner can remove an Owner." } : {};
 }
 
@@ -534,7 +535,7 @@ export async function saveRole(_prev: ActionState, form: FormData): Promise<Acti
   const { error } = parsed.data.id
     ? await supabase.from("roles").update(values).eq("id", parsed.data.id)
     : await supabase.from("roles").insert({ ...values, slug: slugify(parsed.data.name) });
-  revalidatePath("/admin/staff");
+  revalidateLocalized("/admin/staff");
   return error ? { error: "Could not save the role." } : { message: "Role saved." };
 }
 
@@ -554,7 +555,7 @@ export async function setDiscoveryStatus(placeId: string, status: "new" | "colle
     .update({ status, listing_id: listingId, assigned_to: user.id })
     .eq("google_place_id", placeId);
   if (listingId) await supabase.from("listings").update({ google_place_id: placeId }).eq("id", listingId);
-  revalidatePath("/admin/discovery");
+  revalidateLocalized("/admin/discovery");
 }
 
 export async function addArea(_prev: ActionState, form: FormData): Promise<ActionState> {
@@ -572,7 +573,7 @@ export async function addArea(_prev: ActionState, form: FormData): Promise<Actio
     type: !parentRow ? "city" : parentRow.type === "state" ? "city" : "area",
   });
   updateTag(tags.taxonomy);
-  revalidatePath("/admin/taxonomy");
+  revalidateLocalized("/admin/taxonomy");
   return error ? { error: error.code === "23505" ? "That area already exists." : "Could not add." } : { message: `${name} added.` };
 }
 
@@ -589,7 +590,7 @@ export async function addCategory(_prev: ActionState, form: FormData): Promise<A
     sort_order: 1000,
   });
   updateTag(tags.taxonomy);
-  revalidatePath("/admin/taxonomy");
+  revalidateLocalized("/admin/taxonomy");
   return error ? { error: error.code === "23505" ? "That category already exists." : "Could not add." } : { message: `${nameEn} added.` };
 }
 
@@ -604,7 +605,7 @@ export async function addRedirect(_prev: ActionState, form: FormData): Promise<A
   }
   const { error } = await supabase.from("redirects").upsert({ from_path: from, to_path: to });
   updateTag(tags.listings);
-  revalidatePath("/admin/seo");
+  revalidateLocalized("/admin/seo");
   return error ? { error: "Could not save." } : { message: "Redirect saved." };
 }
 
@@ -612,7 +613,7 @@ export async function deleteRedirect(from: string) {
   const { supabase } = await staffClient("seo.edit");
   await supabase.from("redirects").delete().eq("from_path", from);
   updateTag(tags.listings);
-  revalidatePath("/admin/seo");
+  revalidateLocalized("/admin/seo");
 }
 
 // ---------------------------------------------------------------------------

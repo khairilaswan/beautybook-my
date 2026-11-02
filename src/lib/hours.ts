@@ -1,3 +1,5 @@
+import type { Locale } from "@/lib/i18n/config";
+import { localTime, weekdayName } from "@/lib/i18n/names";
 import type { Closure, OpeningHours } from "@/lib/types";
 
 export const TIME_ZONE = "Asia/Kuala_Lumpur";
@@ -63,14 +65,17 @@ export function isOpenAt(hours: OpeningHours[], closures: Closure[], at: Date = 
 }
 
 // Hours grouped by weekday, Monday first, for display.
-export function weeklySchedule(hours: OpeningHours[]): { weekday: number; label: string; slots: string[] }[] {
+export function weeklySchedule(
+  hours: OpeningHours[],
+  locale: Locale = "en",
+): { weekday: number; label: string; slots: string[] }[] {
   return [1, 2, 3, 4, 5, 6, 0].map((weekday) => ({
     weekday,
-    label: WEEKDAYS[weekday],
+    label: weekdayName(weekday, locale),
     slots: hours
       .filter((h) => h.weekday === weekday)
       .sort((a, b) => a.opens.localeCompare(b.opens))
-      .map((h) => `${formatTime(h.opens)} – ${formatTime(h.closes)}`),
+      .map((h) => `${localTime(h.opens, locale)} – ${localTime(h.closes, locale)}`),
   }));
 }
 

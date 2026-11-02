@@ -1,6 +1,6 @@
 import Papa from "papaparse";
 import { type NextRequest } from "next/server";
-import { queryListings, readFilters } from "@/app/admin/listings/query";
+import { queryListings, readFilters } from "@/app/[lang]/admin/listings/query";
 import { requirePermission } from "@/lib/auth";
 
 // Exports the filtered listings in the same columns the importer accepts, so

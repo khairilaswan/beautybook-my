@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { markVerified, mergeListings, setListingStatus } from "@/app/admin/actions";
+import { markVerified, mergeListings, setListingStatus } from "@/app/[lang]/admin/actions";
 
 export function ListingAdminTools({ id, status }: { id: string; status: string }) {
   const [pending, start] = useTransition();

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { setMemberAccess } from "@/app/admin/actions";
+import { setMemberAccess } from "@/app/[lang]/admin/actions";
 import type { AccessStatus } from "@/lib/site-access";
 
 export function MemberActions({ userId, status }: { userId: string; status: AccessStatus }) {

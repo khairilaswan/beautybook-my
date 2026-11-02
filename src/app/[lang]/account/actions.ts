@@ -1,16 +1,16 @@
 "use server";
 
 import { listingPath } from "@/lib/paths";
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, loginPath } from "@/lib/auth";
+import { getActionI18n, revalidateLocalized } from "@/lib/i18n/server";
 import { normalizeMalaysianPhone } from "@/lib/phone";
 import { createClient } from "@/lib/supabase/server";
 
 async function signedIn(next: string) {
   const user = await getCurrentUser();
-  if (!user) redirect(`/login?next=${encodeURIComponent(next)}`);
+  if (!user) redirect(await loginPath(next));
   return user;
 }
 
@@ -21,7 +21,7 @@ export async function toggleFavourite(listingId: string, slug: string, save: boo
     ? await supabase.from("favourites").upsert({ user_id: user.id, listing_id: listingId })
     : await supabase.from("favourites").delete().eq("user_id", user.id).eq("listing_id", listingId);
   if (error) throw new Error("Could not update favourites");
-  revalidatePath("/account");
+  revalidateLocalized("/account");
 }
 
 export async function saveNote(listingId: string, slug: string, body: string) {
@@ -34,7 +34,7 @@ export async function saveNote(listingId: string, slug: string, body: string) {
         .upsert({ user_id: user.id, listing_id: listingId, body: text, updated_at: new Date().toISOString() })
     : await supabase.from("notes").delete().eq("user_id", user.id).eq("listing_id", listingId);
   if (error) throw new Error("Could not save your note");
-  revalidatePath("/account");
+  revalidateLocalized("/account");
 }
 
 const profileSchema = z.object({
@@ -45,10 +45,11 @@ const profileSchema = z.object({
 
 export async function updateProfile(_prev: { message?: string }, form: FormData): Promise<{ message?: string }> {
   const user = await signedIn("/account");
+  const { t } = await getActionI18n();
   const parsed = profileSchema.safeParse(Object.fromEntries(form));
-  if (!parsed.success) return { message: "Please check your details." };
+  if (!parsed.success) return { message: t.profile.check };
   const phone = parsed.data.phone ? normalizeMalaysianPhone(parsed.data.phone) : null;
-  if (parsed.data.phone && !phone) return { message: "Please enter a Malaysian phone number." };
+  if (parsed.data.phone && !phone) return { message: t.common.malaysianPhone };
   const supabase = await createClient();
   const { error } = await supabase
     .from("profiles")
@@ -58,9 +59,9 @@ export async function updateProfile(_prev: { message?: string }, form: FormData)
       preferred_lang: parsed.data.preferredLang,
     })
     .eq("id", user.id);
-  if (error) return { message: "Could not save. Please try again." };
-  revalidatePath("/account");
-  return { message: "Saved." };
+  if (error) return { message: t.profile.error };
+  revalidateLocalized("/account");
+  return { message: t.common.saved };
 }
 
 export async function recordSearch(query: string | null, category: string | null, area: string | null) {
@@ -79,5 +80,5 @@ export async function clearSearchHistory() {
   const user = await signedIn("/account");
   const supabase = await createClient();
   await supabase.from("search_history").delete().eq("user_id", user.id);
-  revalidatePath("/account");
+  revalidateLocalized("/account");
 }

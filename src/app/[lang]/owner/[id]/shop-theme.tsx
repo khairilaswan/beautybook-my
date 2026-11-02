@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { type FormState, saveShopTheme } from "@/app/owner/actions";
+import { type FormState, saveShopTheme } from "@/app/[lang]/owner/actions";
 import { ThemeControls } from "@/components/theme-controls";
 import { ThemeSample } from "@/components/theme-sample";
 import { type SiteTheme, themeLabel } from "@/lib/themes";

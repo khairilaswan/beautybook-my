@@ -1,13 +1,14 @@
 import { Suspense } from "react";
 import { HubPage, HubSkeleton } from "@/components/hub-page";
 import { hubMetadata } from "@/lib/hub-metadata";
+import { getLocale } from "@/lib/i18n/server";
 
-export async function generateMetadata({ params }: PageProps<"/[area]/[category]">) {
+export async function generateMetadata({ params }: PageProps<"/[lang]/[area]/[category]">) {
   const { area, category } = await params;
-  return hubMetadata(area, category);
+  return hubMetadata(area, category, await getLocale());
 }
 
-export default function AreaCategoryPage({ params }: PageProps<"/[area]/[category]">) {
+export default function AreaCategoryPage({ params }: PageProps<"/[lang]/[area]/[category]">) {
   return (
     <Suspense fallback={<HubSkeleton />}>
       <AreaCategoryHub params={params} />
@@ -15,7 +16,7 @@ export default function AreaCategoryPage({ params }: PageProps<"/[area]/[categor
   );
 }
 
-async function AreaCategoryHub({ params }: { params: PageProps<"/[area]/[category]">["params"] }) {
+async function AreaCategoryHub({ params }: { params: PageProps<"/[lang]/[area]/[category]">["params"] }) {
   const { area, category } = await params;
   return <HubPage areaSlug={area} categorySlug={category} />;
 }

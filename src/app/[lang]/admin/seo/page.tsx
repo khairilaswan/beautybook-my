@@ -1,4 +1,4 @@
-import { RedirectForm, DeleteRedirect } from "@/app/admin/seo/forms";
+import { RedirectForm, DeleteRedirect } from "@/app/[lang]/admin/seo/forms";
 import { requirePermission } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Suspense } from "react";

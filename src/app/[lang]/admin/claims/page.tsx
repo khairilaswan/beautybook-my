@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ClaimButtons } from "@/app/admin/claims/claim-buttons";
+import { ClaimButtons } from "@/app/[lang]/admin/claims/claim-buttons";
 import { requirePermission } from "@/lib/auth";
 import { formatDate } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";

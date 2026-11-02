@@ -1,4 +1,4 @@
-import { DiscoveryRow } from "@/app/admin/discovery/discovery-row";
+import { DiscoveryRow } from "@/app/[lang]/admin/discovery/discovery-row";
 import { requirePermission } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Suspense } from "react";
@@ -8,7 +8,7 @@ import { Suspense } from "react";
 // listing from those sources. Nothing from Google is stored except the ID.
 // Auth runs inside Suspense so client navigations between admin pages stream
 // instead of blocking.
-export default function Page(props: PageProps<"/admin/discovery">) {
+export default function Page(props: PageProps<"/[lang]/admin/discovery">) {
   return (
     <Suspense fallback={<p className="text-muted">Loading…</p>}>
       <DiscoveryPage {...props} />
@@ -16,7 +16,7 @@ export default function Page(props: PageProps<"/admin/discovery">) {
   );
 }
 
-async function DiscoveryPage({ searchParams }: PageProps<"/admin/discovery">) {
+async function DiscoveryPage({ searchParams }: PageProps<"/[lang]/admin/discovery">) {
   await requirePermission("listings.edit");
   const { status } = await searchParams;
   const current = status === "collected" || status === "skipped" ? status : "new";

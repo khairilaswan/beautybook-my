@@ -1,4 +1,4 @@
-import { AddStaffForm, RoleForm, StaffRow } from "@/app/admin/staff/staff-forms";
+import { AddStaffForm, RoleForm, StaffRow } from "@/app/[lang]/admin/staff/staff-forms";
 import { requirePermission } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";

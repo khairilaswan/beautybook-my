@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { type ActionState, saveSiteTheme, setOwnerThemes } from "@/app/admin/actions";
+import { type ActionState, saveSiteTheme, setOwnerThemes } from "@/app/[lang]/admin/actions";
 import { ThemeSample } from "@/components/theme-sample";
 import { setPreview } from "@/lib/theme-preview";
 import { ThemeControls } from "@/components/theme-controls";

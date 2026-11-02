@@ -1,6 +1,7 @@
 "use server";
 
-import { revalidatePath, updateTag } from "next/cache";
+import { updateTag } from "next/cache";
+import { revalidateLocalized } from "@/lib/i18n/server";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 import { tags } from "@/lib/data/directory";
@@ -21,7 +22,7 @@ export async function setRequestStatus(requestId: string, status: (typeof STATUS
     .eq("id", requestId)
     .select("id");
   if (error || !data?.length) throw new Error("You can't update this request.");
-  revalidatePath("/owner", "layout");
+  revalidateLocalized("/owner", "layout");
 }
 
 const listingSchema = z.object({
@@ -147,7 +148,7 @@ export async function addPhoto(listingId: string, slug: string, storagePath: str
   if (error) return { error: "Could not add the photo." };
   updateTag(tags.listing(slug));
   updateTag(tags.listings);
-  revalidatePath(`/owner/${listingId}`);
+  revalidateLocalized(`/owner/${listingId}`);
   return { message: "Photo added." };
 }
 
@@ -158,7 +159,7 @@ export async function removePhoto(listingId: string, slug: string, photoId: numb
   if (data?.[0]) await supabase.storage.from("listing-photos").remove([data[0].storage_path]);
   updateTag(tags.listing(slug));
   updateTag(tags.listings);
-  revalidatePath(`/owner/${listingId}`);
+  revalidateLocalized(`/owner/${listingId}`);
 }
 
 // A shop's own theme for its page (null: use the site theme). Only while the
@@ -182,6 +183,6 @@ export async function saveShopTheme(
   const { data, error } = await supabase.from("listings").update(theme).eq("id", listingId).select("id");
   if (error || !data?.length) return { error: "Could not save. Please try again." };
   updateTag(tags.listing(slug));
-  revalidatePath(`/owner/${listingId}`);
+  revalidateLocalized(`/owner/${listingId}`);
   return { message: style ? "Saved. Your shop page now uses this theme." : "Saved. Your shop page uses the BeautyBook theme." };
 }

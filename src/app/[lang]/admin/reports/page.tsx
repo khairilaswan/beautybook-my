@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ReportButtons } from "@/app/admin/reports/report-buttons";
+import { ReportButtons } from "@/app/[lang]/admin/reports/report-buttons";
 import { requirePermission } from "@/lib/auth";
 import { formatDate } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";

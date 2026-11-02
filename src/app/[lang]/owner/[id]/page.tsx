@@ -3,8 +3,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { DetailsForm, HoursEditor, PhotoManager, ServicesEditor } from "@/app/owner/[id]/editors";
-import { ShopThemePicker } from "@/app/owner/[id]/shop-theme";
+import { DetailsForm, HoursEditor, PhotoManager, ServicesEditor } from "@/app/[lang]/owner/[id]/editors";
+import { ShopThemePicker } from "@/app/[lang]/owner/[id]/shop-theme";
 import { RequestStatusButtons } from "@/components/request-status-buttons";
 import { requireUser } from "@/lib/auth";
 import { getAttributes } from "@/lib/data/directory";
@@ -23,7 +23,7 @@ const STATUS_LABELS: Record<string, string> = {
   completed: "Completed",
 };
 
-export default function OwnerListingPage({ params, searchParams }: PageProps<"/owner/[id]">) {
+export default function OwnerListingPage({ params, searchParams }: PageProps<"/[lang]/owner/[id]">) {
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
       <Suspense fallback={<p className="text-muted">Loading…</p>}>
@@ -37,8 +37,8 @@ async function Dashboard({
   params,
   searchParams,
 }: {
-  params: PageProps<"/owner/[id]">["params"];
-  searchParams: PageProps<"/owner/[id]">["searchParams"];
+  params: PageProps<"/[lang]/owner/[id]">["params"];
+  searchParams: PageProps<"/[lang]/owner/[id]">["searchParams"];
 }) {
   const { id } = await params;
   const { welcome } = await searchParams;

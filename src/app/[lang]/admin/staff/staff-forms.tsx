@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState, useTransition } from "react";
-import { type ActionState, addStaff, changeStaffRole, removeStaff, saveRole } from "@/app/admin/actions";
+import { type ActionState, addStaff, changeStaffRole, removeStaff, saveRole } from "@/app/[lang]/admin/actions";
 
 type RoleOption = { id: number; name: string };
 const input = "rounded-xl border border-line bg-white px-3 py-2";

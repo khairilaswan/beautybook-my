@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { MemberActions } from "@/app/admin/members/member-actions";
+import { MemberActions } from "@/app/[lang]/admin/members/member-actions";
 import { requirePermission } from "@/lib/auth";
 import { formatDate } from "@/lib/format";
 import type { AccessStatus } from "@/lib/site-access";
@@ -14,7 +14,7 @@ const TABS: { status: AccessStatus; label: string }[] = [
 
 // Auth runs inside Suspense so client navigations between admin pages stream
 // instead of blocking.
-export default function Page({ searchParams }: PageProps<"/admin/members">) {
+export default function Page({ searchParams }: PageProps<"/[lang]/admin/members">) {
   return (
     <Suspense fallback={<p className="text-muted">Loading…</p>}>
       <MembersPage searchParams={searchParams} />
@@ -22,7 +22,7 @@ export default function Page({ searchParams }: PageProps<"/admin/members">) {
   );
 }
 
-async function MembersPage({ searchParams }: { searchParams: PageProps<"/admin/members">["searchParams"] }) {
+async function MembersPage({ searchParams }: { searchParams: PageProps<"/[lang]/admin/members">["searchParams"] }) {
   const { user } = await requirePermission("staff.manage", "/admin/members");
   const params = await searchParams;
   const status = TABS.find((t) => t.status === params.status)?.status ?? "pending";

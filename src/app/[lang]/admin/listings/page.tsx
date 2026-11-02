@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ADMIN_PAGE_SIZE, queryListings, readFilters } from "@/app/admin/listings/query";
+import { ADMIN_PAGE_SIZE, queryListings, readFilters } from "@/app/[lang]/admin/listings/query";
 import { requirePermission } from "@/lib/auth";
 import { getAreas } from "@/lib/data/directory";
 import { formatDate } from "@/lib/format";
@@ -19,7 +19,7 @@ type Row = {
 
 // Auth runs inside Suspense so client navigations between admin pages stream
 // instead of blocking.
-export default function Page(props: PageProps<"/admin/listings">) {
+export default function Page(props: PageProps<"/[lang]/admin/listings">) {
   return (
     <Suspense fallback={<p className="text-muted">Loading…</p>}>
       <AdminListings {...props} />
@@ -27,7 +27,7 @@ export default function Page(props: PageProps<"/admin/listings">) {
   );
 }
 
-async function AdminListings({ searchParams }: PageProps<"/admin/listings">) {
+async function AdminListings({ searchParams }: PageProps<"/[lang]/admin/listings">) {
   await requirePermission("listings.edit");
   const filters = readFilters(await searchParams);
   const page = filters.page ?? 1;

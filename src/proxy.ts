@@ -1,17 +1,43 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { DEFAULT_LOCALE, LOCALE_HEADER, localePath, splitLocale } from "@/lib/i18n/config";
 import { type AccessStatus, isOpenPath, membersOnly } from "@/lib/site-access";
 
-// Refreshes the Supabase session cookie before pages render. In members-only
-// mode it also keeps out anyone who isn't an approved member.
+// Paths outside the [lang] tree: route handlers and Next internals.
+const UNLOCALIZED = ["/auth", "/api", "/_next", "/.well-known"];
+
+// 1. Languages: /ms/... and /zh/... are served as they are; any other path
+//    is English and is rewritten to /en/... internally. /en/... itself
+//    redirects to the unprefixed address so each page has one English URL.
+// 2. Refreshes the Supabase session cookie before pages render. In
+//    members-only mode it also keeps out anyone who isn't an approved member.
 export async function proxy(request: NextRequest) {
-  let response = NextResponse.next({ request });
   const { pathname, search } = request.nextUrl;
-  const open = isOpenPath(pathname);
+  const split = splitLocale(pathname);
+  if (split.locale === DEFAULT_LOCALE) {
+    const url = request.nextUrl.clone();
+    url.pathname = split.path;
+    return NextResponse.redirect(url, 308);
+  }
+  const unlocalized = !split.locale && UNLOCALIZED.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  const locale = split.locale ?? DEFAULT_LOCALE;
+  const path = split.path;
+  const open = isOpenPath(path);
+
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set(LOCALE_HEADER, locale);
+  const pass = () => {
+    if (split.locale || unlocalized) return NextResponse.next({ request: { headers: requestHeaders } });
+    const url = request.nextUrl.clone();
+    url.pathname = `/${DEFAULT_LOCALE}${pathname === "/" ? "" : pathname}`;
+    return NextResponse.rewrite(url, { request: { headers: requestHeaders } });
+  };
+  let response = pass();
+  const here = (p: string) => localePath(locale, p);
 
   // Keeps refreshed session cookies when the answer is a redirect.
-  const redirectTo = (path: string) => {
-    const res = NextResponse.redirect(new URL(path, request.url));
+  const redirectTo = (target: string) => {
+    const res = NextResponse.redirect(new URL(target, request.url));
     for (const cookie of response.cookies.getAll()) res.cookies.set(cookie);
     res.headers.set("X-Robots-Tag", "noindex");
     return res;
@@ -23,7 +49,7 @@ export async function proxy(request: NextRequest) {
 
   const hasSession = request.cookies.getAll().some((c) => c.name.startsWith("sb-"));
   if (!hasSession) {
-    if (membersOnly && !open) return redirectTo(`/login?next=${encodeURIComponent(pathname + search)}`);
+    if (membersOnly && !open) return redirectTo(here(`/login?next=${encodeURIComponent(pathname + search)}`));
     return done();
   }
 
@@ -39,7 +65,8 @@ export async function proxy(request: NextRequest) {
           for (const { name, value } of cookiesToSet) {
             request.cookies.set(name, value);
           }
-          response = NextResponse.next({ request });
+          requestHeaders.set("cookie", request.cookies.toString());
+          response = pass();
           for (const { name, value, options } of cookiesToSet) {
             response.cookies.set(name, value, options);
           }
@@ -56,7 +83,7 @@ export async function proxy(request: NextRequest) {
 
   const claims = data?.claims;
   if (!claims) {
-    return open ? done() : redirectTo(`/login?next=${encodeURIComponent(pathname + search)}`);
+    return open ? done() : redirectTo(here(`/login?next=${encodeURIComponent(pathname + search)}`));
   }
 
   let access = (claims.app_metadata as { access?: AccessStatus } | undefined)?.access;
@@ -73,9 +100,9 @@ export async function proxy(request: NextRequest) {
   }
 
   if (access === "approved") {
-    return pathname === "/pending" ? redirectTo("/") : done();
+    return path === "/pending" ? redirectTo(here("/")) : done();
   }
-  return open ? done() : redirectTo("/pending");
+  return open ? done() : redirectTo(here("/pending"));
 }
 
 export const config = {

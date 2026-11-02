@@ -1,70 +1,69 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AddBusinessForm } from "@/app/for-business/add-business-form";
+import { AddBusinessForm } from "@/app/[lang]/for-business/add-business-form";
 import { getAreas, getCategories } from "@/lib/data/directory";
+import { alternatesFor } from "@/lib/i18n/config";
+import { areaName, categoryName } from "@/lib/i18n/names";
+import { getI18n } from "@/lib/i18n/server";
 import { whatsAppCodesEnabled } from "@/lib/whatsapp-cloud";
 
-export const metadata: Metadata = {
-  title: "List or claim your salon, barbershop or beauty business",
-  description:
-    "Claim your free BeautyBook listing in about a minute. Update your menu, prices, hours and photos, and receive booking requests on WhatsApp.",
-  alternates: { canonical: "/for-business" },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { locale, t } = await getI18n();
+  return {
+    title: t.forBusiness.metaTitle,
+    description: t.forBusiness.metaDescription,
+    alternates: alternatesFor(locale, "/for-business"),
+  };
+}
 
 export default async function ForBusinessPage() {
-  const [categories, areas] = await Promise.all([getCategories(), getAreas()]);
+  const [categories, areas, { locale, t, href }] = await Promise.all([getCategories(), getAreas(), getI18n()]);
   const byCode = whatsAppCodesEnabled();
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
       <h1 className="max-w-2xl text-3xl font-bold tracking-tight sm:text-4xl">
-        Get booking requests on WhatsApp, free
+        {t.forBusiness.title}
       </h1>
-      <p className="mt-3 max-w-2xl text-lg text-muted">
-        Customers find you on BeautyBook, pick a service and time, and message you on WhatsApp. Claim your listing to
-        keep your menu, prices and hours up to date and see every enquiry.
-      </p>
+      <p className="mt-3 max-w-2xl text-lg text-muted">{t.forBusiness.lead}</p>
 
       <div className="mt-10 grid gap-8 lg:grid-cols-2">
         <section className="rounded-2xl border border-line bg-white p-6">
-          <h2 className="text-xl font-semibold">Already listed?</h2>
-          <p className="mt-1 text-muted">Search for your shop and tap “Claim this business”.</p>
-          <form action="/search" className="mt-4 flex gap-2">
-            <input name="q" required placeholder="Your shop name" className="w-full rounded-xl border border-line px-3 py-2" />
-            <button className="rounded-xl bg-ink px-4 py-2 font-medium text-white">Find</button>
+          <h2 className="text-xl font-semibold">{t.forBusiness.listedTitle}</h2>
+          <p className="mt-1 text-muted">{t.forBusiness.listedBody}</p>
+          <form action={href("/search")} className="mt-4 flex gap-2">
+            <input name="q" required placeholder={t.forBusiness.shopName} className="w-full rounded-xl border border-line px-3 py-2" />
+            <button className="rounded-xl bg-ink px-4 py-2 font-medium text-white">{t.forBusiness.find}</button>
           </form>
           <ol className="mt-6 list-decimal space-y-2 pl-5 text-sm">
-            <li>Sign in.</li>
+            <li>{t.forBusiness.step1}</li>
             {byCode ? (
               <>
-                <li>We send a 6-digit code to your shop&apos;s WhatsApp number.</li>
-                <li>Enter it and your dashboard opens. No paperwork.</li>
+                <li>{t.forBusiness.stepCode1}</li>
+                <li>{t.forBusiness.stepCode2}</li>
               </>
             ) : (
               <>
-                <li>Upload your SSM certificate, a business card or a shopfront photo.</li>
-                <li>We review it within 2 working days and open your dashboard.</li>
+                <li>{t.forBusiness.stepDoc1}</li>
+                <li>{t.forBusiness.stepDoc2}</li>
               </>
             )}
           </ol>
         </section>
 
         <section className="rounded-2xl border border-line bg-white p-6">
-          <h2 className="text-xl font-semibold">Not listed yet? Add your business</h2>
-          <p className="mt-1 text-muted">
-            {byCode
-              ? "It goes live as soon as you verify your WhatsApp number."
-              : "It goes live once we've checked your proof of business."}
-          </p>
+          <h2 className="text-xl font-semibold">{t.forBusiness.addTitle}</h2>
+          <p className="mt-1 text-muted">{byCode ? t.forBusiness.addByCode : t.forBusiness.addByDoc}</p>
           <AddBusinessForm
             byCode={byCode}
-            categories={categories.map((c) => ({ slug: c.slug, name: c.name_en }))}
-            areas={areas.filter((a) => a.type !== "state").map((a) => ({ slug: a.slug, name: a.name }))}
+            categories={categories.map((c) => ({ slug: c.slug, name: categoryName(c, locale) }))}
+            areas={areas.filter((a) => a.type !== "state").map((a) => ({ slug: a.slug, name: areaName(a, locale) }))}
           />
         </section>
       </div>
 
       <p className="mt-10 text-sm text-muted">
-        Want your listing removed instead? See <Link href="/privacy#removal" className="underline">how removal works</Link>.
+        {t.forBusiness.removal}{" "}
+        <Link href={href("/privacy#removal")} className="underline">{t.forBusiness.removalLink}</Link>.
       </p>
     </div>
   );

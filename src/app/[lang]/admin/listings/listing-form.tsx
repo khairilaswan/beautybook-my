@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { type ActionState, saveListing } from "@/app/admin/actions";
+import { type ActionState, saveListing } from "@/app/[lang]/admin/actions";
 import type { Area, Attribute, Category } from "@/lib/types";
 
 const input = "mt-1 w-full rounded-xl border border-line bg-white px-3 py-2";
