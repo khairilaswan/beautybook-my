@@ -21,6 +21,7 @@ import {
   saveVoucherSettings,
   setQuoteStatus,
 } from "@/app/[lang]/owner/growth-actions";
+import { Silhouette } from "@/components/silhouette";
 import { formatDate, photoUrl } from "@/lib/format";
 import { OCCASION_LABELS, PACKAGE_KIND_LABELS } from "@/lib/labels";
 import { uploadFile } from "@/lib/supabase/browser";
@@ -199,7 +200,10 @@ export function StaffEditor(props: {
             {r.photo_path ? (
               <Image src={photoUrl(r.photo_path)} alt="" fill sizes="64px" className="object-cover" />
             ) : (
-              <span className="flex h-full items-center justify-center text-xs text-muted">Photo</span>
+              <>
+                <Silhouette />
+                <span className="absolute inset-x-0 bottom-0 bg-black/40 text-center text-[10px] text-white">Add photo</span>
+              </>
             )}
             <input
               type="file"
