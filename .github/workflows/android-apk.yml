@@ -1,0 +1,54 @@
+name: Android APK
+
+# Builds an installable test APK of the phone app (mobile/). Run it from the
+# Actions tab ("Run workflow"), or it runs by itself when mobile/ changes on
+# main. Download the APK from the run's "Artifacts" section.
+# It is signed with the standard debug key, so it is for testing only: the
+# Play Store build goes through `eas build` (see mobile/README.md).
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["mobile/**", ".github/workflows/android-apk.yml"]
+  pull_request:
+    paths: ["mobile/**", ".github/workflows/android-apk.yml"]
+
+concurrency:
+  group: android-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v5
+      - run: npm ci
+      - name: Generate the Android project
+        run: npx expo prebuild --platform android --no-install
+      - name: Build the APK
+        working-directory: mobile/android
+        run: ./gradlew assembleRelease --no-daemon
+      - name: Name the APK
+        run: |
+          version=$(node -p "require('./app.json').expo.version")
+          cp android/app/build/outputs/apk/release/app-release.apk "BeautyBook-${version}-${GITHUB_SHA::7}.apk"
+      - uses: actions/upload-artifact@v5
+        with:
+          name: BeautyBook-android-apk
+          path: mobile/BeautyBook-*.apk
+          retention-days: 30
