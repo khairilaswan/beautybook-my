@@ -27,7 +27,7 @@ export default async function HomePage() {
           <div className={`relative isolate overflow-hidden ${website.heroImage ? "rounded-3xl" : ""}`}>
           {website.heroImage && <>
             <Image src={website.heroImage} alt={website.heroAlt} fill sizes="(min-width: 1152px) 1120px, calc(100vw - 32px)" className="-z-20 object-cover object-right" preload />
-            <div aria-hidden="true" className="absolute inset-0 -z-10 bg-white/85 sm:bg-linear-to-r sm:from-white/95 sm:via-white/80 sm:to-white/5" />
+            <div aria-hidden="true" className="absolute inset-0 -z-10 bg-linear-to-r from-white/50 via-white/10 to-transparent" />
           </>}
           <div className={`relative flex flex-col justify-center ${website.heroImage ? "min-h-[440px] px-6 py-10 text-slate-950 sm:min-h-[480px] sm:px-10 lg:px-12" : "py-10 sm:py-14"}`}>
           <h1 className="max-w-2xl text-4xl font-bold tracking-tight sm:text-5xl">
