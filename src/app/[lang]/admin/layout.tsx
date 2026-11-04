@@ -20,6 +20,7 @@ const NAV = [
   { href: "/admin/members", label: "Members", perm: "staff.manage" },
   { href: "/admin/staff", label: "Staff & roles", perm: "staff.manage" },
   { href: "/admin/theme", label: "Theme", perm: "staff.manage" },
+  { href: "/admin/website", label: "Website settings", perm: "staff.manage" },
   { href: "/admin/audit", label: "Audit log", perm: "audit.view" },
 ] as const;
 

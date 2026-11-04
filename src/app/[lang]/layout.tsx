@@ -7,6 +7,7 @@ import { CompareTray } from "@/components/compare";
 import { ThemePreviewBar } from "@/components/theme-preview-bar";
 import { UserMenu } from "@/components/user-menu";
 import { getSiteTheme } from "@/lib/data/site-theme";
+import { getWebsiteSettings } from "@/lib/data/website-settings";
 import { siteUrl } from "@/lib/env";
 import { HTML_LANG, LOCALES, OG_LOCALE, alternatesFor } from "@/lib/i18n/config";
 import { I18nProvider } from "@/lib/i18n/client";
@@ -29,12 +30,18 @@ export function generateStaticParams() {
 
 export async function generateMetadata(): Promise<Metadata> {
   const { locale, t } = await getI18n();
+  const website = await getWebsiteSettings();
   return {
     metadataBase: new URL(siteUrl),
-    title: { default: t.meta.defaultTitle, template: "%s | BeautyBook" },
-    description: t.meta.description,
+    title: { default: website[locale].title || t.meta.defaultTitle, template: `%s | ${website.name.replace(/%/g, "")}` },
+    description: website[locale].description || t.meta.description,
+    icons: { icon: website.favicon || "/default-favicon.ico", apple: website.favicon || "/default-favicon.ico" },
+    verification: website.googleVerification ? { google: website.googleVerification } : undefined,
+    robots: website.indexing ? undefined : { index: false, follow: false },
+    twitter: { card: "summary_large_image", images: website.socialImage ? [website.socialImage] : undefined },
     openGraph: {
-      siteName: "BeautyBook",
+      siteName: website.name,
+      images: website.socialImage ? [website.socialImage] : undefined,
       locale: OG_LOCALE[locale],
       alternateLocale: LOCALES.filter((l) => l !== locale).map((l) => OG_LOCALE[l]),
       type: "website",
@@ -48,7 +55,7 @@ export async function generateViewport(): Promise<Viewport> {
 }
 
 export default async function RootLayout({ children }: LayoutProps<"/[lang]">) {
-  const [theme, { locale, t, href }] = await Promise.all([getSiteTheme(), getI18n()]);
+  const [theme, { locale, t, href }, website] = await Promise.all([getSiteTheme(), getI18n(), getWebsiteSettings()]);
   return (
     <html lang={HTML_LANG[locale]} className={`h-full antialiased ${fontVars}`}>
       <head>
@@ -59,7 +66,10 @@ export default async function RootLayout({ children }: LayoutProps<"/[lang]">) {
         <header className="sticky top-0 z-30 border-b border-line bg-white/90 backdrop-blur">
           <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 px-4 sm:gap-4">
             <Link href={href("/")} className="shrink-0 text-base font-bold tracking-tight sm:text-lg">
-              Beauty<span className="text-brand-600">Book</span>
+              {website.logo ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={website.logo} alt={website.name} className="h-9 max-w-32 object-contain sm:max-w-44" />
+              ) : website.name}
             </Link>
             <nav className="ml-auto flex items-center gap-1 whitespace-nowrap text-sm sm:gap-3">
               <Link
@@ -94,7 +104,7 @@ export default async function RootLayout({ children }: LayoutProps<"/[lang]">) {
         <footer className="mt-16 border-t border-line bg-white">
           <div className="mx-auto grid max-w-6xl gap-6 px-4 py-10 text-sm text-muted sm:grid-cols-3">
             <div>
-              <p className="font-semibold text-ink">BeautyBook</p>
+              <p className="font-semibold text-ink">{website.name}</p>
               <p className="mt-1">{t.footer.tagline}</p>
             </div>
             <ul className="space-y-1">
