@@ -17,7 +17,12 @@ export const websiteSchema = z.object({
   businessAlt: z.string().trim().max(200).default(""),
   categoryImages: z.record(z.string(), z.string().max(1000)).default({}),
   indexing: z.boolean().default(true),
-  googleVerification: z.string().trim().max(200).regex(/^[a-zA-Z0-9_-]*$/).default(""),
+  googleVerification: z
+    .string()
+    .trim()
+    .max(200)
+    .regex(/^[a-zA-Z0-9_-]*$/)
+    .default(""),
   en: copy.default({ title: "", description: "", heroTitle: "", heroLead: "" }),
   ms: copy.default({ title: "", description: "", heroTitle: "", heroLead: "" }),
   zh: copy.default({ title: "", description: "", heroTitle: "", heroLead: "" }),

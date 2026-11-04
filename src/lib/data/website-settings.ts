@@ -9,8 +9,14 @@ export async function getWebsiteSettings() {
   cacheLife("hours");
   cacheTag(WEBSITE_TAG);
   try {
-    const { data } = await createPublicClient().from("site_settings").select("website").eq("id", true).maybeSingle();
+    const { data } = await createPublicClient()
+      .from("site_settings")
+      .select("website")
+      .eq("id", true)
+      .maybeSingle();
     const parsed = websiteSchema.safeParse(data?.website);
     return parsed.success ? parsed.data : DEFAULT_WEBSITE;
-  } catch { return DEFAULT_WEBSITE; }
+  } catch {
+    return DEFAULT_WEBSITE;
+  }
 }
