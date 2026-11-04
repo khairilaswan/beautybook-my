@@ -3,7 +3,7 @@ import { revalidatePath, updateTag } from "next/cache";
 import { requirePermission } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { WEBSITE_TAG } from "@/lib/data/website-settings";
-import { websiteSchema } from "@/lib/website-settings";
+import { heroSlideSchema, websiteSchema } from "@/lib/website-settings";
 import type { ActionState } from "../actions";
 
 export async function saveWebsite(
@@ -26,6 +26,20 @@ export async function saveWebsite(
   if (!before.success)
     return { error: "Could not read existing website settings." };
   const input = { ...before.data };
+  const submittedSlides = parseHeroSlides(form.get("heroSlides"));
+  if (!submittedSlides)
+    return { error: "Check the hero slides. You can add up to 10 images." };
+  const oldSlides = before.data.heroSlides.length
+    ? before.data.heroSlides
+    : before.data.heroImage
+      ? [{ id: "legacy-hero", image: before.data.heroImage, alt: before.data.heroAlt }]
+      : [];
+  const oldImages = new Set(oldSlides.map((slide) => slide.image));
+  input.heroSlides = submittedSlides.map((slide) => ({
+    ...slide,
+    image: oldImages.has(slide.image) ? slide.image : "",
+  }));
+  input.heroInterval = Number(form.get("heroInterval") ?? input.heroInterval);
   for (const key of [
     "name",
     "heroAlt",
@@ -56,6 +70,7 @@ export async function saveWebsite(
     "heroImage",
     "businessImage",
     ...(categories ?? []).map((c) => `category:${c.slug}`),
+    ...input.heroSlides.map((slide) => `heroSlide:${slide.id}`),
   ];
   const files: { slot: string; file: File; ext: string }[] = [];
   let total = 0;
@@ -90,6 +105,10 @@ export async function saveWebsite(
   const uploaded: string[] = [];
   const setImage = (slot: string, url: string) => {
     if (slot.startsWith("category:")) next.categoryImages[slot.slice(9)] = url;
+    else if (slot.startsWith("heroSlide:")) {
+      const slide = next.heroSlides.find((item) => item.id === slot.slice(10));
+      if (slide) slide.image = url;
+    }
     else
       next[
         slot as
@@ -122,6 +141,9 @@ export async function saveWebsite(
       db.storage.from("site-media").getPublicUrl(path).data.publicUrl,
     );
   }
+  next.heroSlides = next.heroSlides.filter((slide) => slide.image);
+  next.heroImage = next.heroSlides[0]?.image ?? "";
+  next.heroAlt = next.heroSlides[0]?.alt ?? "";
   const { data, error } = await db
     .from("site_settings")
     .update({
@@ -144,6 +166,17 @@ export async function saveWebsite(
   revalidatePath("/sitemap.xml");
   revalidatePath("/robots.txt");
   return { message: "Website settings saved." };
+}
+
+function parseHeroSlides(value: FormDataEntryValue | null) {
+  try {
+    const result = heroSlideSchema.array().max(10).safeParse(JSON.parse(String(value ?? "[]")));
+    if (!result.success || new Set(result.data.map((slide) => slide.id)).size !== result.data.length)
+      return null;
+    return result.data;
+  } catch {
+    return null;
+  }
 }
 
 export async function refreshSitemap(): Promise<ActionState> {

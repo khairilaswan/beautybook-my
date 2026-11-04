@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { HeroCarousel } from "@/components/hero-carousel";
 import { getWebsiteSettings } from "@/lib/data/website-settings";
 import { JsonLd } from "@/components/json-ld";
 import { RecentSearches } from "@/components/recent-searches";
@@ -18,22 +19,27 @@ export default async function HomePage() {
     getWebsiteSettings(),
   ]);
   const cities = areas.filter((a) => a.type === "city");
+  const heroSlides = website.heroSlides.length
+    ? website.heroSlides.filter((slide) => slide.image)
+    : website.heroImage
+      ? [{ id: "legacy-hero", image: website.heroImage, alt: website.heroAlt }]
+      : [];
 
   return (
     <>
       <JsonLd data={siteJsonLd(website.name, website.logo)} />
       <section className="theme-hero bg-gradient-to-b from-brand-50 to-canvas">
         <div className="mx-auto max-w-6xl px-4 pt-6 pb-6">
-          <div className={`relative isolate overflow-hidden ${website.heroImage ? "rounded-3xl" : ""}`}>
-          {website.heroImage && <>
-            <Image src={website.heroImage} alt={website.heroAlt} fill sizes="(min-width: 1152px) 1120px, calc(100vw - 32px)" className="-z-20 object-cover object-right" preload />
+          <div className={`relative isolate overflow-hidden ${heroSlides.length ? "rounded-3xl" : ""}`}>
+          {heroSlides.length > 0 && <>
+            <HeroCarousel slides={heroSlides} interval={website.heroInterval} />
             <div aria-hidden="true" className="absolute inset-0 -z-10 bg-linear-to-r from-white/50 via-white/10 to-transparent" />
           </>}
-          <div className={`relative flex flex-col justify-center ${website.heroImage ? "min-h-[440px] px-6 py-10 text-slate-950 sm:min-h-[480px] sm:px-10 lg:px-12" : "py-10 sm:py-14"}`}>
+          <div className={`relative flex flex-col justify-center ${heroSlides.length ? "min-h-[440px] px-6 py-10 text-slate-950 sm:min-h-[480px] sm:px-10 lg:px-12" : "py-10 sm:py-14"}`}>
           <h1 className="max-w-2xl text-4xl font-bold tracking-tight sm:text-5xl">
             {website[locale].heroTitle || t.home.title}
           </h1>
-          <p className={`mt-4 max-w-xl text-lg ${website.heroImage ? "text-slate-700" : "text-muted"}`}>{website[locale].heroLead || t.home.lead}</p>
+          <p className={`mt-4 max-w-xl text-lg ${heroSlides.length ? "text-slate-700" : "text-muted"}`}>{website[locale].heroLead || t.home.lead}</p>
           <form
             action={href("/search")}
             className="mt-8 grid w-full max-w-2xl gap-2 rounded-2xl border border-line bg-white p-2 shadow-sm sm:grid-cols-[1fr_1fr_auto]"
