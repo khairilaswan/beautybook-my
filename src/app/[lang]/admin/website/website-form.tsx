@@ -61,6 +61,61 @@ function ImageField({
     </div>
   );
 }
+
+function HeroSlidesEditor({ settings }: { settings: WebsiteSettings }) {
+  const [slides, setSlides] = useState(() => {
+    const initial = settings.heroSlides.length
+      ? settings.heroSlides
+      : settings.heroImage
+        ? [{ id: "legacy-hero", image: settings.heroImage, alt: settings.heroAlt }]
+        : [];
+    return initial.map((slide) => ({ ...slide, preview: "" }));
+  });
+  const update = (id: string, changes: Partial<(typeof slides)[number]>) =>
+    setSlides((current) => current.map((slide) => slide.id === id ? { ...slide, ...changes } : slide));
+  return (
+    <div className="space-y-3">
+      <input
+        type="hidden"
+        name="heroSlides"
+        value={JSON.stringify(slides.map(({ id, image, alt }) => ({ id, image, alt })))}
+      />
+      {slides.map((slide, index) => (
+        <div key={slide.id} className="rounded-xl border border-line p-3">
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="font-medium">Slide {index + 1}</h3>
+            <div className="flex gap-3 text-sm">
+              <button type="button" disabled={index === 0} className="underline disabled:opacity-40" aria-label={`Move slide ${index + 1} up`} onClick={() => setSlides((current) => { const next = [...current]; [next[index - 1], next[index]] = [next[index], next[index - 1]]; return next; })}>Move up</button>
+              <button type="button" disabled={index === slides.length - 1} className="underline disabled:opacity-40" aria-label={`Move slide ${index + 1} down`} onClick={() => setSlides((current) => { const next = [...current]; [next[index], next[index + 1]] = [next[index + 1], next[index]]; return next; })}>Move down</button>
+              <button type="button" className="text-red-700 underline" onClick={() => setSlides((current) => current.filter((item) => item.id !== slide.id))}>Remove</button>
+            </div>
+          </div>
+          {(slide.preview || slide.image) && <img src={slide.preview || slide.image} alt={`Hero slide ${index + 1} preview`} className="my-2 h-28 w-full rounded-lg object-cover" />}
+          <label className="block text-sm">
+            {slide.image ? "Replace image" : "Choose image"}
+            <input name={`file:heroSlide:${slide.id}`} type="file" accept="image/png,image/jpeg,image/webp" className="mt-1 block w-full text-sm" onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (!file) { update(slide.id, { preview: "" }); return; }
+              const reader = new FileReader();
+              reader.onload = () => update(slide.id, { preview: String(reader.result) });
+              reader.readAsDataURL(file);
+            }} />
+          </label>
+          <p className="mt-1 text-xs text-muted">Wide landscape PNG, JPEG or WebP. Up to 2 MB.</p>
+          <label className="mt-2 block text-sm">Image description (alt text)
+            <input className={field} value={slide.alt} maxLength={200} onChange={(event) => update(slide.id, { alt: event.target.value })} />
+          </label>
+        </div>
+      ))}
+      <button type="button" disabled={slides.length >= 10} className="rounded-lg border border-line px-4 py-2 text-sm disabled:opacity-50" onClick={() => setSlides((current) => [...current, { id: crypto.randomUUID(), image: "", alt: "", preview: "" }])}>Add hero image</button>
+      <label className="block text-sm">Rotate every (seconds)
+        <input className={field} type="number" name="heroInterval" min={3} max={20} step={1} defaultValue={settings.heroInterval} />
+        <span className="text-xs text-muted">Choose 3–20 seconds. Visitors can also move between slides manually.</span>
+      </label>
+    </div>
+  );
+}
+
 export function WebsiteForm({
   settings: s,
   categories,
@@ -172,21 +227,8 @@ export function WebsiteForm({
         </section>
         <section className={box}>
           <h2 className="text-lg font-semibold">Homepage images</h2>
-          <ImageField
-            slot="heroImage"
-            label="Hero image"
-            url={s.heroImage}
-            hint="Wide landscape image. Covers the homepage hero behind the heading and search. Up to 2 MB."
-          />
-          <label className="block text-sm">
-            Hero image description
-            <input
-              className={field}
-              name="heroAlt"
-              defaultValue={s.heroAlt}
-              maxLength={200}
-            />
-          </label>
+          <p className="text-sm text-muted">Add up to 10 images. They rotate automatically on the homepage, and visitors can browse them with the slide controls.</p>
+          <HeroSlidesEditor settings={s} />
           <ImageField
             slot="businessImage"
             label="For businesses section image"
