@@ -23,15 +23,20 @@ export default async function HomePage() {
     <>
       <JsonLd data={siteJsonLd(website.name, website.logo)} />
       <section className="theme-hero bg-gradient-to-b from-brand-50 to-canvas">
-        <div className={`mx-auto max-w-6xl px-4 pb-12 pt-14 sm:pt-20 ${website.heroImage ? "grid gap-8 lg:grid-cols-[3fr_2fr] lg:items-center" : ""}`}>
-          <div>
+        <div className="mx-auto max-w-6xl px-4 pt-6 pb-6">
+          <div className={`relative isolate overflow-hidden ${website.heroImage ? "rounded-3xl" : ""}`}>
+          {website.heroImage && <>
+            <Image src={website.heroImage} alt={website.heroAlt} fill sizes="(min-width: 1152px) 1120px, calc(100vw - 32px)" className="-z-20 object-cover object-right" preload />
+            <div aria-hidden="true" className="absolute inset-0 -z-10 bg-white/85 sm:bg-linear-to-r sm:from-white/95 sm:via-white/80 sm:to-white/5" />
+          </>}
+          <div className={`relative flex flex-col justify-center ${website.heroImage ? "min-h-[440px] px-6 py-10 text-slate-950 sm:min-h-[480px] sm:px-10 lg:px-12" : "py-10 sm:py-14"}`}>
           <h1 className="max-w-2xl text-4xl font-bold tracking-tight sm:text-5xl">
             {website[locale].heroTitle || t.home.title}
           </h1>
-          <p className="mt-4 max-w-xl text-lg text-muted">{website[locale].heroLead || t.home.lead}</p>
+          <p className={`mt-4 max-w-xl text-lg ${website.heroImage ? "text-slate-700" : "text-muted"}`}>{website[locale].heroLead || t.home.lead}</p>
           <form
             action={href("/search")}
-            className="mt-8 grid max-w-3xl gap-2 rounded-2xl border border-line bg-white p-2 shadow-sm sm:grid-cols-[1fr_1fr_auto]"
+            className="mt-8 grid w-full max-w-2xl gap-2 rounded-2xl border border-line bg-white p-2 shadow-sm sm:grid-cols-[1fr_1fr_auto]"
           >
             <label className="sr-only" htmlFor="home-category">{t.common.service}</label>
             <select id="home-category" name="category" className="rounded-xl px-3 py-3">
@@ -55,7 +60,7 @@ export default async function HomePage() {
             <RecentSearches />
           </div>
           </div>
-          {website.heroImage && <div className="relative aspect-[4/3] overflow-hidden rounded-3xl"><Image src={website.heroImage} alt={website.heroAlt} fill sizes="(min-width: 1024px) 440px, 100vw" className="object-cover" priority /></div>}
+          </div>
         </div>
       </section>
 

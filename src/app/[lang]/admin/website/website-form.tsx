@@ -176,7 +176,7 @@ export function WebsiteForm({
             slot="heroImage"
             label="Hero image"
             url={s.heroImage}
-            hint="Wide landscape image. Displayed beside the search section. Up to 2 MB."
+            hint="Wide landscape image. Covers the homepage hero behind the heading and search. Up to 2 MB."
           />
           <label className="block text-sm">
             Hero image description
