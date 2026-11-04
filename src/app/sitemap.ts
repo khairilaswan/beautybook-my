@@ -13,6 +13,7 @@ import { hubPath, listingPath, mallPath } from "@/lib/paths";
 import { getGuides } from "@/lib/data/content";
 import { absoluteUrl } from "@/lib/seo";
 import { membersOnly } from "@/lib/site-access";
+import { getWebsiteSettings } from "@/lib/data/website-settings";
 
 type Entry = Omit<MetadataRoute.Sitemap[number], "url" | "alternates"> & { path: string };
 
@@ -26,7 +27,7 @@ function localized(entries: Entry[]): MetadataRoute.Sitemap {
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  if (membersOnly) return [];
+  if (membersOnly || !(await getWebsiteSettings()).indexing) return [];
   const [areas, categories, counts, listings, guides, mallCounts] = await Promise.all([
     getAreas(),
     getCategories(),

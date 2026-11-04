@@ -1,4 +1,6 @@
 import Link from "next/link";
+import Image from "next/image";
+import { getWebsiteSettings } from "@/lib/data/website-settings";
 import { JsonLd } from "@/components/json-ld";
 import { RecentSearches } from "@/components/recent-searches";
 import { getAreas, getCategories, getMalls } from "@/lib/data/directory";
@@ -8,23 +10,25 @@ import { getI18n } from "@/lib/i18n/server";
 import { siteJsonLd } from "@/lib/seo";
 
 export default async function HomePage() {
-  const [categories, areas, malls, { locale, t, href }] = await Promise.all([
+  const [categories, areas, malls, { locale, t, href }, website] = await Promise.all([
     getCategories(),
     getAreas(),
     getMalls(),
     getI18n(),
+    getWebsiteSettings(),
   ]);
   const cities = areas.filter((a) => a.type === "city");
 
   return (
     <>
-      <JsonLd data={siteJsonLd()} />
+      <JsonLd data={siteJsonLd(website.name, website.logo)} />
       <section className="theme-hero bg-gradient-to-b from-brand-50 to-canvas">
-        <div className="mx-auto max-w-6xl px-4 pb-12 pt-14 sm:pt-20">
+        <div className={`mx-auto max-w-6xl px-4 pb-12 pt-14 sm:pt-20 ${website.heroImage ? "grid gap-8 lg:grid-cols-[3fr_2fr] lg:items-center" : ""}`}>
+          <div>
           <h1 className="max-w-2xl text-4xl font-bold tracking-tight sm:text-5xl">
-            {t.home.title}
+            {website[locale].heroTitle || t.home.title}
           </h1>
-          <p className="mt-4 max-w-xl text-lg text-muted">{t.home.lead}</p>
+          <p className="mt-4 max-w-xl text-lg text-muted">{website[locale].heroLead || t.home.lead}</p>
           <form
             action={href("/search")}
             className="mt-8 grid max-w-3xl gap-2 rounded-2xl border border-line bg-white p-2 shadow-sm sm:grid-cols-[1fr_1fr_auto]"
@@ -50,6 +54,8 @@ export default async function HomePage() {
           <div className="mt-6">
             <RecentSearches />
           </div>
+          </div>
+          {website.heroImage && <div className="relative aspect-[4/3] overflow-hidden rounded-3xl"><Image src={website.heroImage} alt={website.heroAlt} fill sizes="(min-width: 1024px) 440px, 100vw" className="object-cover" priority /></div>}
         </div>
       </section>
 
@@ -62,6 +68,7 @@ export default async function HomePage() {
               href={href(`/search?category=${c.slug}`)}
               className="rounded-2xl border border-line bg-white p-4 hover:border-brand-200 hover:shadow-sm"
             >
+              {website.categoryImages[c.slug] && <div className="relative mb-3 aspect-square overflow-hidden rounded-xl"><Image src={website.categoryImages[c.slug]} alt="" fill sizes="(min-width: 640px) 240px, 45vw" className="object-cover" /></div>}
               <span className="font-medium">{categoryName(c, locale)}</span>
               <span className="mt-0.5 block text-sm text-muted">{locale === "en" ? c.name_ms : c.name_en}</span>
             </Link>
@@ -111,6 +118,7 @@ export default async function HomePage() {
       <section className="mx-auto max-w-6xl px-4 py-10">
         <div className="grid gap-6 rounded-3xl bg-ink p-8 text-white sm:grid-cols-[2fr_1fr] sm:items-center">
           <div>
+            {website.businessImage && <div className="relative mb-5 aspect-[2/1] overflow-hidden rounded-xl"><Image src={website.businessImage} alt={website.businessAlt} fill sizes="(min-width: 640px) 640px, 90vw" className="object-cover" /></div>}
             <h2 className="text-2xl font-semibold">{t.home.ownerTitle}</h2>
             <p className="mt-2 text-white/75">{t.home.ownerBody}</p>
           </div>

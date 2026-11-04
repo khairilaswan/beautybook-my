@@ -145,13 +145,13 @@ export function jsonLdScript(data: JsonLd | JsonLd[]): { __html: string } {
 }
 
 // Home page: names the site for Google and lets it offer a search box.
-export function siteJsonLd(): JsonLd[] {
+export function siteJsonLd(name = "BeautyBook", logo = ""): JsonLd[] {
   return [
     {
       "@context": "https://schema.org",
       "@type": "WebSite",
       "@id": absoluteUrl("/#website"),
-      name: "BeautyBook",
+      name,
       url: absoluteUrl("/"),
       inLanguage: ["en-MY", "ms-MY", "zh-Hans-MY"],
       potentialAction: {
@@ -164,7 +164,8 @@ export function siteJsonLd(): JsonLd[] {
       "@context": "https://schema.org",
       "@type": "Organization",
       "@id": absoluteUrl("/#organization"),
-      name: "BeautyBook",
+      name,
+      logo: logo || undefined,
       url: absoluteUrl("/"),
       areaServed: { "@type": "Country", name: "Malaysia" },
     },
